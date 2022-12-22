@@ -18,3 +18,5 @@ RUN cmake ..
 RUN make -j $(nproc --all)
 
 RUN rm -rf /var/lib/apt/lists/*
+
+ENTRYPOINT [ "/tmp/TitleFinder/build/cli/titlefinder_cli" ]
