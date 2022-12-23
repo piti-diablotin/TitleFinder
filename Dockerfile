@@ -1,9 +1,9 @@
-FROM ubuntu:latest
+FROM ubuntu:latest as build
 
 USER root
 
 ENV DEBIAN_FRONTEND=noninteractive
-RUN apt update && apt install nlohmann-json3-dev libspdlog-dev libcurl4-openssl-dev libfmt-dev  cmake g++ git -y
+RUN apt update && apt install libspdlog1 libcurl4 libfmt8 nlohmann-json3-dev libspdlog-dev libcurl4-openssl-dev libfmt-dev  cmake g++ git -y
 
 
 WORKDIR /tmp
@@ -11,12 +11,12 @@ WORKDIR /tmp
 RUN git clone https://github.com/piti-diablotin/TitleFinder.git
 
 WORKDIR ./TitleFinder
-RUN mkdir build
+RUN cmake -S . -B build -DCMAKE_BUILD_TYPE=Release && cmake --build build
 
-WORKDIR ./build
-RUN cmake .. -DCMAKE_BUILD_TYPE=Release
-RUN make -j $(nproc --all)
+FROM ubuntu:latest as main
 
-RUN rm -rf /var/lib/apt/lists/*
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt update && apt install libspdlog1 libcurl4 libfmt8 -y
+COPY --from=build /tmp/TitleFinder/build/cli/titlefinder_cli /usr/bin/
 
-ENTRYPOINT [ "/tmp/TitleFinder/build/cli/titlefinder_cli" ]
+ENTRYPOINT [ "/usr/bin/titlefinder_cli" ]
