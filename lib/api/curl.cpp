@@ -129,12 +129,13 @@ std::future<json> Curl::get(const std::string_view url) {
     } catch (const std::exception &e) {
       Logger()->error("Enable to parse json, received data is \n{}", result);
       return json::parse(fmt::format(
-          R"({ status_message: "json parse error: {}", status_code: {})",
+          R"({{ "status_message": "json parse error: {}", "status_code": {}}})",
           e.what(), -1));
     } catch (...) {
       Logger()->error("Enable to parse json, received data is \n{}", result);
       return json::parse(fmt::format(
-          R"({ status_message: "not an std::exception", status_code: {})", -2));
+          R"({{ "status_message": "not an std::exception", "status_code": {}}})",
+          -2));
     }
   });
 }
