@@ -30,14 +30,6 @@
 
 using nlohmann::json;
 
-#define fillOption(struct__, json__, option__)                                 \
-  try {                                                                        \
-    if (json__.contains(#option__) && !json__[#option__].is_null())            \
-      struct__.option__ = json__[#option__];                                   \
-  } catch (...) {                                                              \
-    TitleFinder::Api::Logger()->error("Json error for option {}", #option__);  \
-  }
-
 namespace {
 template <class R>
 void fillSerchResult(TitleFinder::Api::Search::SearchResults<R> &result,
@@ -66,29 +58,13 @@ Response_t Search::searchMovies(const optionalString language,
   const std::string_view url{"/search/movie?"};
   std::string options;
 
-  if (language.has_value())
-    options.append(
-        fmt::format("language={}&", _tmdb->escapeString(language.value())));
-
+  fillEscapeQuery(options, language, _tmdb);
   options.append(fmt::format("query={}&", _tmdb->escapeString(query)));
-
-  if (page.has_value())
-    options.append(fmt::format("page={}&", page.value()));
-
-  if (page.has_value())
-    options.append(fmt::format("include_adult={}&",
-                               include_adult.value() ? "true" : "false"));
-
-  if (region.has_value())
-    options.append(
-        fmt::format("region={}&", _tmdb->escapeString(region.value())));
-
-  if (year.has_value())
-    options.append(fmt::format("year={}&", year.value()));
-
-  if (primary_release_year.has_value())
-    options.append(
-        fmt::format("primary_release_year={}&", primary_release_year.value()));
+  fillQuery(options, page);
+  fillQuery(options, include_adult);
+  fillEscapeQuery(options, region, _tmdb);
+  fillQuery(options, year);
+  fillQuery(options, primary_release_year);
 
   auto f = _tmdb->get(fmt::format("{}{}", url, options));
   f.wait();
@@ -97,7 +73,7 @@ Response_t Search::searchMovies(const optionalString language,
 
   CHECK_RESPONSE(j);
 
-  auto rep = std::make_unique<SearchResults<MovieInfo>>();
+  auto rep = std::make_unique<SearchMoviesResults>();
   fillSerchResult(*rep, j);
 
   rep->results.resize(rep->total_results.value_or(0));
@@ -125,10 +101,57 @@ Response_t Search::searchMovies(const optionalString language,
   return rep;
 }
 
-Response_t Search::searchTvShows(optionalString language, optionalInt page,
+Response_t Search::searchTvShows(const optionalString language,
+                                 const optionalInt page,
                                  const std::string &query,
-                                 optionalBool include_adult,
-                                 optionalInt first_air_date_year) {}
+                                 const optionalBool include_adult,
+                                 const optionalInt first_air_date_year) {
+  const std::string_view url{"/search/tv?"};
+  std::string options;
+
+  fillEscapeQuery(options, language, _tmdb);
+  fillQuery(options, page);
+
+  options.append(fmt::format("query={}&", _tmdb->escapeString(query)));
+
+  fillQuery(options, include_adult);
+
+  fillQuery(options, first_air_date_year);
+
+  auto f = _tmdb->get(fmt::format("{}{}", url, options));
+  f.wait();
+  auto j = f.get();
+  Logger()->debug("{}:\n{}", __FUNCTION__, j.dump(2));
+
+  CHECK_RESPONSE(j);
+
+  auto rep = std::make_unique<SearchTvShowsResults>();
+  fillSerchResult(*rep, j);
+
+  rep->results.resize(rep->total_results.value_or(0));
+  for (int i = 0; i < rep->total_results.value_or(0); ++i) {
+    auto &show = j["results"][i];
+    TvShowInfo &info = rep->results[i];
+    fillOption(info, show, poster_path);
+    fillOption(info, show, popularity);
+    fillOption(info, show, id);
+    fillOption(info, show, backdrop_path);
+    fillOption(info, show, vote_average);
+    fillOption(info, show, overview);
+    fillOption(info, show, first_air_date);
+    fillOption(info, show, original_language);
+    fillOption(info, show, vote_count);
+    fillOption(info, show, name);
+    fillOption(info, show, original_name);
+    if (show.contains("genre_ids")) {
+      show["genre_ids"].get_to(info.genre_ids);
+    }
+    if (show.contains("origin_country")) {
+      show["origin_country"].get_to(info.origin_country);
+    }
+  }
+  return rep;
+}
 
 } // namespace Api
 

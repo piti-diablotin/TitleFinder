@@ -84,6 +84,19 @@ using Response_t = std::unique_ptr<Response>;
       return std::make_unique<ErrorResponse>(-1, json__["errors"][0]);         \
   }
 
+#define fillOption(struct__, json__, option__)                                 \
+  if (json__.contains(#option__) && !json__[#option__].is_null())              \
+    struct__.option__ = json__[#option__];
+
+#define fillQuery(string__, option__)                                          \
+  if (option__.has_value())                                                    \
+    string__.append(fmt::format("{}={}&", #option__, option__.value()));
+
+#define fillEscapeQuery(string__, option__, escaper__)                         \
+  if (option__.has_value())                                                    \
+    string__.append(fmt::format("{}={}&", #option__,                           \
+                                escaper__->escapeString(option__.value())));
+
 } // namespace Api
 
 } // namespace TitleFinder
