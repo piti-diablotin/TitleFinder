@@ -1,4 +1,7 @@
-#include "api/curl.hpp"
+#include "api/authentication.hpp"
+#include "api/response.hpp"
+#include "api/search.hpp"
+#include "api/tmdb.hpp"
 #include "parser.hpp"
 
 #include <iostream>
@@ -7,6 +10,7 @@ int main(int argc, char **argv) {
   Parser parser{argc, argv};
   parser.setOption("help", 'h', "Print help message");
   parser.setOption("api_key", 'k', "API_KEY", "Api key for TheMovieDB");
+  parser.setOption("movie", 'm', "Matrix", "Movie title (quoted)");
   parser.parse();
 
   if (parser.isSetOption("help")) {
@@ -14,24 +18,39 @@ int main(int argc, char **argv) {
     return 0;
   }
 
-  TitleFinder::Api::Curl curl("https://httpbin.org");
-  auto responseGet = curl.get("/get");
+  auto tmdb =
+      TitleFinder::Api::Tmdb::create(parser.getOption<std::string>("api_key"));
 
-  nlohmann::json data{{"test_string", "hello"}, {"pi", 3.14}, {"bool", true}};
-  auto responsePost = curl.post("/post", data);
-  auto responseDel = curl.del("/delete", data);
+  TitleFinder::Api::Authentication auth(tmdb);
 
-  responseGet.wait();
-  auto json = responseGet.get();
-  std::cout << json.dump(2) << std::endl;
+  auto rep = auth.createRequestToken();
+  if (rep->getCode() != 200) {
+    auto err = dynamic_cast<TitleFinder::Api::ErrorResponse *>(rep.get());
+    std::cerr << err->getCode() << std::endl;
+    std::cerr << err->getMessage() << std::endl;
+    return -1;
+  }
 
-  responsePost.wait();
-  auto r1 = responsePost.get();
-  std::cout << "Post returned " << r1 << std::endl;
+  TitleFinder::Api::Search search(tmdb);
+  rep = search.searchMovies({}, parser.getOption<std::string>("movie"), {}, {},
+                            {}, {}, {});
 
-  responseDel.wait();
-  auto r2 = responseDel.get();
-  std::cout << "delete returned " << r2 << std::endl;
+  if (rep->getCode() != 200) {
+    auto err = dynamic_cast<TitleFinder::Api::ErrorResponse *>(rep.get());
+    std::cerr << err->getCode() << std::endl;
+    std::cerr << err->getMessage() << std::endl;
+    return -1;
+  }
+
+  auto s =
+      dynamic_cast<TitleFinder::Api::Search::SearchMoviesResults *>(rep.get());
+
+  if (s->results.size() > 0) {
+    auto first = s->results[0];
+    std::cout << first.title.value_or("No title") << " ("
+              << first.release_date.value_or("0000-00-00").substr(0, 4) << ")"
+              << std::endl;
+  }
 
   return 0;
 }

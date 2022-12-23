@@ -36,7 +36,7 @@ std::string addApiKey(std::string_view url, const std::string &key) {
   if (it == std::string::npos) {
     return fmt::format("{}?api_key={}", url, key);
   } else {
-    return str.insert(it + 1, fmt::format("api_key={}", key));
+    return str.insert(it + 1, fmt::format("api_key={}&", key));
   }
 }
 } // namespace
@@ -72,28 +72,30 @@ std::future<bool> Tmdb::del(const std::string_view url, const json &data) {
 }
 
 void Tmdb::setSession(const std::string &id,
-                      const std::chrono::system_clock::time_point expires) {
+                      [[maybe_unused]] const std::string &expires) {
   _sessionId = id;
-  _sessionExpires = expires;
+  //_sessionExpires = expires;
 }
 
 void Tmdb::setToken(const std::string &req,
-                    const std::chrono::system_clock::time_point expires) {
+                    [[maybe_unused]] const std::string &expires) {
   _token = req;
-  _tokenExpires = expires;
+  //_tokenExpires = expires;
 }
 
 std::string_view Tmdb::getToken() const { return _token; }
 
 bool Tmdb::sessionExpired() const {
-  return _sessionExpires < std::chrono::system_clock::now();
+  return false; //_sessionExpires < std::chrono::system_clock::now();
 }
 
 bool Tmdb::tokenExpired() const {
-  return _tokenExpires < std::chrono::system_clock::now();
+  return false; //_tokenExpires < std::chrono::system_clock::now();
 }
 
-void Tmdb::escapeString(std::string &str) const {
+void Tmdb::escapeString(std::string &str) const { _curl.escapeString(str); }
+
+std::string Tmdb::escapeString(const std::string &str) const {
   return _curl.escapeString(str);
 }
 

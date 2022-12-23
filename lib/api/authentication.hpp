@@ -1,5 +1,5 @@
 /**
- * @file api/curl.hpp
+ * @file api/authentication.hpp
  *
  * @brief
  *
@@ -23,53 +23,42 @@
 
 #pragma once
 
-#include <future>
-#include <mutex>
-#include <nlohmann/json.hpp>
-#include <nlohmann/json_fwd.hpp>
-#include <string>
-#include <string_view>
+#include <memory>
 
-struct curl_slist;
+#include "api/optionals.hpp"
+#include "api/response.hpp"
+#include "api/tmdb.hpp"
 
 namespace TitleFinder {
 
 namespace Api {
 
-class Curl {
+class Authentication {
 
 public:
+  class RequestToken : public Response {
+  public:
+    optionalBool sucess;
+    optionalString expires_at;
+    optionalString request_token;
+    RequestToken();
+    ~RequestToken() = default;
+  };
+
   /**
    * Empty constructor
    */
-  explicit Curl(const std::string &baseUrl);
-
-  Curl(const Curl &curl) = delete;
-  Curl &operator=(const Curl &curl) = delete;
+  explicit Authentication(std::shared_ptr<Tmdb> tmdb);
 
   /**
    * Destructor
    */
-  virtual ~Curl();
+  virtual ~Authentication() = default;
 
-  [[nodiscard]] std::future<bool> post(std::string_view url,
-                                       const nlohmann::json &data);
-  [[nodiscard]] std::future<nlohmann::json> get(std::string_view url);
-  [[nodiscard]] std::future<bool> del(std::string_view url,
-                                      const nlohmann::json &data);
-
-  static void cleanUp();
-
-  void escapeString(std::string &str) const;
-
-  std::string escapeString(const std::string &str) const;
+  Response_t createRequestToken();
 
 private:
-  std::string _baseUrl;
-  void *_curl;
-  curl_slist *_header;
-  std::mutex _resourceUsed;
-  static bool _globalInit;
+  std::shared_ptr<Tmdb> _tmdb;
 };
 
 } // namespace Api

@@ -168,6 +168,13 @@ void Curl::escapeString(std::string &str) const {
   curl_free(escaped);
 }
 
+std::string Curl::escapeString(const std::string &str) const {
+  char *escaped = curl_easy_escape(_curl, str.c_str(), str.size());
+  std::string tmp{escaped};
+  curl_free(escaped);
+  return tmp;
+}
+
 } // namespace Api
 
 } // namespace TitleFinder

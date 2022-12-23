@@ -53,11 +53,9 @@ public:
   [[nodiscard]] std::future<bool> del(std::string_view url,
                                       const nlohmann::json &data);
 
-  void setSession(const std::string &id,
-                  const std::chrono::system_clock::time_point expires);
+  void setSession(const std::string &id, const std::string &expires);
 
-  void setToken(const std::string &req,
-                const std::chrono::system_clock::time_point expires);
+  void setToken(const std::string &req, const std::string &expires);
 
   std::string_view getToken() const;
 
@@ -66,6 +64,8 @@ public:
   bool tokenExpired() const;
 
   void escapeString(std::string &str) const;
+
+  std::string escapeString(const std::string &str) const;
 
 private:
   /**

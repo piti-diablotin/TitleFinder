@@ -2,8 +2,10 @@ find_package(CURL REQUIRED)
 find_package(nlohmann_json REQUIRED)
 
 add_library(api
+  authentication.cpp
   curl.cpp
   logger.cpp
+  search.cpp
   tmdb.cpp
   )
 

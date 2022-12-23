@@ -22,6 +22,7 @@
  */
 
 #include "api/logger.hpp"
+#include <spdlog/common.h>
 
 #ifdef __GNUC__
 #if __GNUC__ >= 4
@@ -55,28 +56,18 @@ void Logger::buildLogger() {
     return;
   auto output_console_sink =
       std::make_shared<spdlog::sinks::ansicolor_stdout_sink_mt>();
-#ifndef NDEBUG
-  output_console_sink->set_level(spdlog::level::trace);
-#else
-  output_console_sink->set_level(spdlog::level::info);
-#endif
 
   auto output_file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(
       "titlefinder_api.log", false);
-#ifndef NDEBUG
-  output_file_sink->set_level(spdlog::level::trace);
-#else
-  output_file_sink->set_level(spdlog::level::warn);
-#endif
 
   auto log = new spdlog::logger("TitleFinder::Api",
                                 {output_console_sink, output_file_sink});
   log->set_pattern(R"([%n] -%t- %^%v%$)");
 
 #ifndef NDEBUG
-  log->set_level(spdlog::level::debug);
+  log->set_level(spdlog::level::trace);
 #else
-  log->set_level(spdlog::level::info);
+  log->set_level(spdlog::level::warn);
 #endif
   _logger.reset(log);
   spdlog::register_logger(_logger);
