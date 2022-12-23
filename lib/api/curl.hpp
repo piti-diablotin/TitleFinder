@@ -21,6 +21,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#pragma once
+
 #include <future>
 #include <mutex>
 #include <nlohmann/json.hpp>
@@ -57,6 +59,8 @@ public:
                                       const nlohmann::json &data);
 
   static void cleanUp();
+
+  void escapeString(std::string &str) const;
 
 private:
   std::string _baseUrl;

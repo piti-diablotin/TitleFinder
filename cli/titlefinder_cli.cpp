@@ -3,7 +3,7 @@
 
 #include <iostream>
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
   Parser parser{argc, argv};
   parser.setOption("help", 'h', "Print help message");
   parser.setOption("api_key", 'k', "API_KEY", "Api key for TheMovieDB");

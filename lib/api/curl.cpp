@@ -1,7 +1,7 @@
 /**
  * @file api/curl.cpp
  *
- * @brief 
+ * @brief
  *
  * @author Jordan Bieder
  *
@@ -124,8 +124,18 @@ std::future<json> Curl::get(const std::string_view url) {
       return json::parse(fmt::format(
           R"({ status_message: "{}", status_code: {})", errorStr, res));
     }
-    return json::parse(result);
-    ;
+    try {
+      return json::parse(result);
+    } catch (const std::exception &e) {
+      Logger()->error("Enable to parse json, received data is \n{}", result);
+      return json::parse(fmt::format(
+          R"({ status_message: "json parse error: {}", status_code: {})",
+          e.what(), -1));
+    } catch (...) {
+      Logger()->error("Enable to parse json, received data is \n{}", result);
+      return json::parse(fmt::format(
+          R"({ status_message: "not an std::exception", status_code: {})", -2));
+    }
   });
 }
 
@@ -149,6 +159,12 @@ std::future<bool> Curl::del(const std::string_view url, const json &data) {
     auto res = curl_easy_perform(_curl);
     return res == CURLE_OK;
   });
+}
+
+void Curl::escapeString(std::string &str) const {
+  char *escaped = curl_easy_escape(_curl, str.c_str(), str.size());
+  str = escaped;
+  curl_free(escaped);
 }
 
 } // namespace Api

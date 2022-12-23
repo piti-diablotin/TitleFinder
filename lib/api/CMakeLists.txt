@@ -4,6 +4,7 @@ find_package(nlohmann_json REQUIRED)
 add_library(api
   curl.cpp
   logger.cpp
+  tmdb.cpp
   )
 
 add_library(titlefinder::api ALIAS api)
