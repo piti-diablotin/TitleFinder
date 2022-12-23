@@ -14,7 +14,7 @@ WORKDIR ./TitleFinder
 RUN mkdir build
 
 WORKDIR ./build
-RUN cmake ..
+RUN cmake .. -DCMAKE_BUILD_TYPE=Release
 RUN make -j $(nproc --all)
 
 RUN rm -rf /var/lib/apt/lists/*
