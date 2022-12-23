@@ -32,11 +32,11 @@ namespace Api {
 
 class Exception : public std::exception {
 public:
-  const char *what() const noexcept final { return _what.c_str(); }
+  const char* what() const noexcept final { return _what.c_str(); }
 
 protected:
-  explicit Exception(const std::string &what) : std::exception(), _what(what) {}
-  explicit Exception(const char *what) : std::exception(), _what(what) {}
+  explicit Exception(const std::string& what) : std::exception(), _what(what) {}
+  explicit Exception(const char* what) : std::exception(), _what(what) {}
 
 private:
   std::string _what;
@@ -45,8 +45,8 @@ private:
 #define DEFINE_EXCEPTION(NAME)                                                 \
   class NAME : public Exception {                                              \
   public:                                                                      \
-    explicit NAME(const std::string &what) : Exception(what) {}                \
-    explicit NAME(const char *what) : Exception(what) {}                       \
+    explicit NAME(const std::string& what) : Exception(what) {}                \
+    explicit NAME(const char* what) : Exception(what) {}                       \
   };
 
 DEFINE_EXCEPTION(Error401)

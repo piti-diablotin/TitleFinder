@@ -98,13 +98,13 @@ public:
    */
   virtual ~Search() = default;
 
-  Response_t searchMovies(optionalString language, const std::string &query,
+  Response_t searchMovies(optionalString language, const std::string& query,
                           optionalInt page, optionalBool include_adult,
                           optionalString region, optionalInt year,
                           optionalInt primary_release_year);
 
   Response_t searchTvShows(optionalString language, optionalInt page,
-                           const std::string &query, optionalBool include_adult,
+                           const std::string& query, optionalBool include_adult,
                            optionalInt first_air_date_year);
 
 private:

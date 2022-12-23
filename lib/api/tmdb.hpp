@@ -40,7 +40,7 @@ namespace Api {
 class Tmdb {
 
 public:
-  [[nodiscard]] static std::shared_ptr<Tmdb> create(const std::string &apiKey);
+  [[nodiscard]] static std::shared_ptr<Tmdb> create(const std::string& apiKey);
 
   /**
    * Destructor
@@ -48,14 +48,14 @@ public:
   virtual ~Tmdb();
 
   [[nodiscard]] std::future<bool> post(std::string_view url,
-                                       const nlohmann::json &data);
+                                       const nlohmann::json& data);
   [[nodiscard]] std::future<nlohmann::json> get(std::string_view url);
   [[nodiscard]] std::future<bool> del(std::string_view url,
-                                      const nlohmann::json &data);
+                                      const nlohmann::json& data);
 
-  void setSession(const std::string &id, const std::string &expires);
+  void setSession(const std::string& id, const std::string& expires);
 
-  void setToken(const std::string &req, const std::string &expires);
+  void setToken(const std::string& req, const std::string& expires);
 
   std::string_view getToken() const;
 
@@ -63,15 +63,15 @@ public:
 
   bool tokenExpired() const;
 
-  void escapeString(std::string &str) const;
+  void escapeString(std::string& str) const;
 
-  std::string escapeString(const std::string &str) const;
+  std::string escapeString(const std::string& str) const;
 
 private:
   /**
    * Empty constructor
    */
-  explicit Tmdb(const std::string &apiKey);
+  explicit Tmdb(const std::string& apiKey);
 
   std::string _apiKey;
   std::string _token;

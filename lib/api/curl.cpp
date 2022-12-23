@@ -34,9 +34,9 @@
 #include "api/logger.hpp"
 
 namespace {
-size_t writefunction(char *ptr, size_t size, size_t nmemb, void *userData) {
-  char *str = static_cast<char *>(ptr);
-  static_cast<std::string *>(userData)->append(str, str + (size * nmemb));
+size_t writefunction(char* ptr, size_t size, size_t nmemb, void* userData) {
+  char* str = static_cast<char*>(ptr);
+  static_cast<std::string*>(userData)->append(str, str + (size * nmemb));
   return size * nmemb;
 }
 } // namespace
@@ -49,7 +49,7 @@ using json = nlohmann::json;
 
 bool Curl::_globalInit = false;
 
-Curl::Curl(const std::string &baseUrl)
+Curl::Curl(const std::string& baseUrl)
     : _baseUrl(baseUrl), _curl(nullptr), _header(nullptr), _resourceUsed() {
   if (!_globalInit) {
     Logger()->info("Init curl globaly");
@@ -81,7 +81,7 @@ void Curl::cleanUp() {
   _globalInit = false;
 }
 
-std::future<bool> Curl::post(const std::string_view url, const json &data) {
+std::future<bool> Curl::post(const std::string_view url, const json& data) {
   std::string fullUrl = fmt::format("{}{}", _baseUrl, url);
 
   Logger()->debug("Sending post to {}", fullUrl);
@@ -95,7 +95,7 @@ std::future<bool> Curl::post(const std::string_view url, const json &data) {
     curl_easy_setopt(_curl, CURLOPT_URL, fullUrl.c_str());
     curl_easy_setopt(_curl, CURLOPT_HTTPGET, 1);
     curl_easy_setopt(_curl, CURLOPT_ERRORBUFFER, errorStr);
-    curl_easy_setopt(_curl, CURLOPT_WRITEDATA, static_cast<void *>(&result));
+    curl_easy_setopt(_curl, CURLOPT_WRITEDATA, static_cast<void*>(&result));
     curl_easy_setopt(_curl, CURLOPT_POST, 1L);
     curl_easy_setopt(_curl, CURLOPT_POSTFIELDS, data.dump().c_str());
     auto res = curl_easy_perform(_curl);
@@ -118,7 +118,7 @@ std::future<json> Curl::get(const std::string_view url) {
     curl_easy_setopt(_curl, CURLOPT_URL, fullUrl.c_str());
     curl_easy_setopt(_curl, CURLOPT_HTTPGET, 1);
     curl_easy_setopt(_curl, CURLOPT_ERRORBUFFER, errorStr);
-    curl_easy_setopt(_curl, CURLOPT_WRITEDATA, static_cast<void *>(&result));
+    curl_easy_setopt(_curl, CURLOPT_WRITEDATA, static_cast<void*>(&result));
     auto res = curl_easy_perform(_curl);
     if (res != CURLE_OK) {
       return json::parse(fmt::format(
@@ -126,7 +126,7 @@ std::future<json> Curl::get(const std::string_view url) {
     }
     try {
       return json::parse(result);
-    } catch (const std::exception &e) {
+    } catch (const std::exception& e) {
       Logger()->error("Enable to parse json, received data is \n{}", result);
       return json::parse(fmt::format(
           R"({{ "status_message": "json parse error: {}", "status_code": {}}})",
@@ -140,7 +140,7 @@ std::future<json> Curl::get(const std::string_view url) {
   });
 }
 
-std::future<bool> Curl::del(const std::string_view url, const json &data) {
+std::future<bool> Curl::del(const std::string_view url, const json& data) {
   std::string fullUrl = fmt::format("{}{}", _baseUrl, url);
 
   Logger()->debug("Sending delete to {}", fullUrl);
@@ -155,21 +155,21 @@ std::future<bool> Curl::del(const std::string_view url, const json &data) {
     curl_easy_setopt(_curl, CURLOPT_URL, fullUrl.c_str());
     curl_easy_setopt(_curl, CURLOPT_CUSTOMREQUEST, "DELETE");
     curl_easy_setopt(_curl, CURLOPT_ERRORBUFFER, errorStr);
-    curl_easy_setopt(_curl, CURLOPT_WRITEDATA, static_cast<void *>(&result));
+    curl_easy_setopt(_curl, CURLOPT_WRITEDATA, static_cast<void*>(&result));
     curl_easy_setopt(_curl, CURLOPT_POSTFIELDS, data.dump().c_str());
     auto res = curl_easy_perform(_curl);
     return res == CURLE_OK;
   });
 }
 
-void Curl::escapeString(std::string &str) const {
-  char *escaped = curl_easy_escape(_curl, str.c_str(), str.size());
+void Curl::escapeString(std::string& str) const {
+  char* escaped = curl_easy_escape(_curl, str.c_str(), str.size());
   str = escaped;
   curl_free(escaped);
 }
 
-std::string Curl::escapeString(const std::string &str) const {
-  char *escaped = curl_easy_escape(_curl, str.c_str(), str.size());
+std::string Curl::escapeString(const std::string& str) const {
+  char* escaped = curl_easy_escape(_curl, str.c_str(), str.size());
   std::string tmp{escaped};
   curl_free(escaped);
   return tmp;

@@ -42,10 +42,10 @@ public:
   /**
    * Empty constructor
    */
-  explicit Curl(const std::string &baseUrl);
+  explicit Curl(const std::string& baseUrl);
 
-  Curl(const Curl &curl) = delete;
-  Curl &operator=(const Curl &curl) = delete;
+  Curl(const Curl& curl) = delete;
+  Curl& operator=(const Curl& curl) = delete;
 
   /**
    * Destructor
@@ -53,21 +53,21 @@ public:
   virtual ~Curl();
 
   [[nodiscard]] std::future<bool> post(std::string_view url,
-                                       const nlohmann::json &data);
+                                       const nlohmann::json& data);
   [[nodiscard]] std::future<nlohmann::json> get(std::string_view url);
   [[nodiscard]] std::future<bool> del(std::string_view url,
-                                      const nlohmann::json &data);
+                                      const nlohmann::json& data);
 
   static void cleanUp();
 
-  void escapeString(std::string &str) const;
+  void escapeString(std::string& str) const;
 
-  std::string escapeString(const std::string &str) const;
+  std::string escapeString(const std::string& str) const;
 
 private:
   std::string _baseUrl;
-  void *_curl;
-  curl_slist *_header;
+  void* _curl;
+  curl_slist* _header;
   std::mutex _resourceUsed;
   static bool _globalInit;
 };

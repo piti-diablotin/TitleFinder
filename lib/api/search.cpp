@@ -32,8 +32,8 @@ using nlohmann::json;
 
 namespace {
 template <class R>
-void fillSerchResult(TitleFinder::Api::Search::SearchResults<R> &result,
-                     json &data) {
+void fillSerchResult(TitleFinder::Api::Search::SearchResults<R>& result,
+                     json& data) {
   if (data.contains("page"))
     result.page = data["page"];
   if (data.contains("total_pages"))
@@ -50,7 +50,7 @@ namespace Api {
 Search::Search(std::shared_ptr<Tmdb> tmdb) : _tmdb(tmdb) {}
 
 Response_t Search::searchMovies(const optionalString language,
-                                const std::string &query, optionalInt page,
+                                const std::string& query, optionalInt page,
                                 const optionalBool include_adult,
                                 const optionalString region, optionalInt year,
                                 const optionalInt primary_release_year) {
@@ -78,8 +78,8 @@ Response_t Search::searchMovies(const optionalString language,
 
   rep->results.resize(rep->total_results.value_or(0));
   for (int i = 0; i < rep->total_results.value_or(0); ++i) {
-    auto &movie = j["results"][i];
-    MovieInfo &info = rep->results[i];
+    auto& movie = j["results"][i];
+    MovieInfo& info = rep->results[i];
     fillOption(info, movie, poster_path);
     fillOption(info, movie, adult);
     fillOption(info, movie, overview);
@@ -103,7 +103,7 @@ Response_t Search::searchMovies(const optionalString language,
 
 Response_t Search::searchTvShows(const optionalString language,
                                  const optionalInt page,
-                                 const std::string &query,
+                                 const std::string& query,
                                  const optionalBool include_adult,
                                  const optionalInt first_air_date_year) {
   const std::string_view url{"/search/tv?"};
@@ -130,8 +130,8 @@ Response_t Search::searchTvShows(const optionalString language,
 
   rep->results.resize(rep->total_results.value_or(0));
   for (int i = 0; i < rep->total_results.value_or(0); ++i) {
-    auto &show = j["results"][i];
-    TvShowInfo &info = rep->results[i];
+    auto& show = j["results"][i];
+    TvShowInfo& info = rep->results[i];
     fillOption(info, show, poster_path);
     fillOption(info, show, popularity);
     fillOption(info, show, id);

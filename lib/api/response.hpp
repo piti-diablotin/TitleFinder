@@ -56,7 +56,7 @@ public:
   /**
    * Empty constructor
    */
-  ErrorResponse(int code, const std::string &message)
+  ErrorResponse(int code, const std::string& message)
       : Response(code), _message(message) {
     ;
   }

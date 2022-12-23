@@ -6,7 +6,7 @@
 
 #include <iostream>
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
   Parser parser{argc, argv};
   parser.setOption("help", 'h', "Print help message");
   parser.setOption("api_key", 'k', "API_KEY", "Api key for TheMovieDB");
@@ -26,7 +26,7 @@ int main(int argc, char **argv) {
 
   auto rep = auth.createRequestToken();
   if (rep->getCode() != 200) {
-    auto err = dynamic_cast<TitleFinder::Api::ErrorResponse *>(rep.get());
+    auto err = dynamic_cast<TitleFinder::Api::ErrorResponse*>(rep.get());
     std::cerr << err->getCode() << std::endl;
     std::cerr << err->getMessage() << std::endl;
     return -1;
@@ -38,14 +38,14 @@ int main(int argc, char **argv) {
                               {}, {}, {}, {});
 
     if (rep->getCode() != 200) {
-      auto err = dynamic_cast<TitleFinder::Api::ErrorResponse *>(rep.get());
+      auto err = dynamic_cast<TitleFinder::Api::ErrorResponse*>(rep.get());
       std::cerr << err->getCode() << std::endl;
       std::cerr << err->getMessage() << std::endl;
       return -1;
     }
 
-    auto s = dynamic_cast<TitleFinder::Api::Search::SearchMoviesResults *>(
-        rep.get());
+    auto s =
+        dynamic_cast<TitleFinder::Api::Search::SearchMoviesResults*>(rep.get());
 
     if (s->results.size() > 0) {
       auto first = s->results[0];
@@ -60,13 +60,13 @@ int main(int argc, char **argv) {
                                {}, {});
 
     if (rep->getCode() != 200) {
-      auto err = dynamic_cast<TitleFinder::Api::ErrorResponse *>(rep.get());
+      auto err = dynamic_cast<TitleFinder::Api::ErrorResponse*>(rep.get());
       std::cerr << err->getCode() << std::endl;
       std::cerr << err->getMessage() << std::endl;
       return -1;
     }
 
-    auto s = dynamic_cast<TitleFinder::Api::Search::SearchTvShowsResults *>(
+    auto s = dynamic_cast<TitleFinder::Api::Search::SearchTvShowsResults*>(
         rep.get());
 
     if (s->results.size() > 0) {

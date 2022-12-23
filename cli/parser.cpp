@@ -9,20 +9,18 @@
 #include <string_view>
 
 //
-Parser::Parser(int argc, char** argv) : _argc(argc), _argv(argv), _binary(argv[0]), _empty(-10), _options()
-{
-}
+Parser::Parser(int argc, char** argv)
+    : _argc(argc), _argv(argv), _binary(argv[0]), _empty(-10), _options() {}
 
 //
-void Parser::parse()
-{
+void Parser::parse() {
   auto nbOptions = _options.size();
-  struct option *options = nullptr;
+  struct option* options = nullptr;
   std::string forGetopts = ":"; // Just to be safe
   options = new struct option[++nbOptions];
 
   size_t num = 0;
-  for (auto &opt : _options) {
+  for (auto& opt : _options) {
     if (opt._letter > 0)
       forGetopts += static_cast<char>(opt._letter);
     if (opt._hasArg == 1) {
@@ -67,7 +65,7 @@ void Parser::parse()
           break;
         }
       }
-    } catch (std::out_of_range &e) {
+    } catch (std::out_of_range& e) {
       std::cerr << e.what() << std::endl;
     }
   }
@@ -75,29 +73,27 @@ void Parser::parse()
 }
 
 //
-void Parser::setOption(std::string name, char letter, std::string description)
-{
+void Parser::setOption(std::string name, char letter, std::string description) {
   _options.push_back(
       {false, std::move(name), letter, 0, "false", std::move(description)});
 }
 
 //
-void Parser::setOption(std::string name, std::string description)
-{
+void Parser::setOption(std::string name, std::string description) {
   _options.push_back(
       {false, std::move(name), --_empty, 0, "false", std::move(description)});
 }
 
 //
-void Parser::setOption(std::string name, char letter, std::string defaultValue, std::string description)
-{
+void Parser::setOption(std::string name, char letter, std::string defaultValue,
+                       std::string description) {
   _options.push_back({false, std::move(name), letter, 1,
                       std::move(defaultValue), std::move(description)});
 }
 
 //
-void Parser::setOption(std::string name, std::string defaultValue, std::string description)
-{
+void Parser::setOption(std::string name, std::string defaultValue,
+                       std::string description) {
   _options.push_back({false, std::move(name), --_empty, 1,
                       std::move(defaultValue), std::move(description)});
 }
@@ -108,7 +104,7 @@ void Parser::setOption(std::string name, std::string defaultValue, std::string d
  * @result If option has an argument then return it as a string.
  */
 template <> std::string Parser::getOption(const std::string_view option) {
-  for (auto &testOpt : _options) {
+  for (auto& testOpt : _options) {
     if (testOpt._name == option) {
       if (testOpt._hasArg == 1) {
         return testOpt._value;
@@ -127,7 +123,7 @@ template <> std::string Parser::getOption(const std::string_view option) {
  * @result If option has an argument then return it as a boolean.
  */
 template <> bool Parser::getOption(const std::string_view option) {
-  for (auto &testOpt : _options) {
+  for (auto& testOpt : _options) {
     if (testOpt._name == option) {
       if (testOpt._hasArg == 0) {
         return (testOpt._value == "true" ? true : false);
@@ -141,9 +137,8 @@ template <> bool Parser::getOption(const std::string_view option) {
 }
 
 //
-bool Parser::isSetOption(std::string_view option)
-{
-  for (auto &testOpt : _options) {
+bool Parser::isSetOption(std::string_view option) {
+  for (auto& testOpt : _options) {
     if (testOpt._name == option) {
       return testOpt._isSet;
     }
@@ -152,11 +147,10 @@ bool Parser::isSetOption(std::string_view option)
 }
 
 //
-std::ostream& operator<<(std::ostream& out, const Parser& parser)
-{
+std::ostream& operator<<(std::ostream& out, const Parser& parser) {
   out << "Usage : " << parser._binary << " [-";
 
-  for (auto &opt : parser._options) {
+  for (auto& opt : parser._options) {
     if (opt._hasArg == 0 && opt._letter > 0) {
       out << static_cast<char>(opt._letter);
     }
@@ -164,19 +158,19 @@ std::ostream& operator<<(std::ostream& out, const Parser& parser)
 
   out << "] ";
 
-  for (auto &opt : parser._options) {
+  for (auto& opt : parser._options) {
     if (opt._hasArg == 0 && opt._letter < 0) {
       out << "[--" << opt._name << "] ";
     }
   }
 
-  for (auto &opt : parser._options) {
+  for (auto& opt : parser._options) {
     if (opt._hasArg == 1) {
       out << "[-" << static_cast<char>(opt._letter) << " argument] ";
     }
   }
   out << "\n\nOptions are :\n";
-  for (auto &opt : parser._options) {
+  for (auto& opt : parser._options) {
     if (opt._letter > 0)
       out << "  -" << static_cast<char>(opt._letter) << "  --" << opt._name
           << " : \n"

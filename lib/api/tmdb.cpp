@@ -30,7 +30,7 @@
 #include <system_error>
 
 namespace {
-std::string addApiKey(std::string_view url, const std::string &key) {
+std::string addApiKey(std::string_view url, const std::string& key) {
   std::string str(url);
   auto it = str.find('?');
   if (it == std::string::npos) {
@@ -47,19 +47,19 @@ namespace Api {
 
 using json = nlohmann::json;
 
-std::shared_ptr<Tmdb> Tmdb::create(const std::string &apiKey) {
+std::shared_ptr<Tmdb> Tmdb::create(const std::string& apiKey) {
   auto ptr = new Tmdb(apiKey);
   return std::shared_ptr<Tmdb>(ptr);
 }
 
-Tmdb::Tmdb(const std::string &apiKey)
+Tmdb::Tmdb(const std::string& apiKey)
     : _apiKey(apiKey), _token(), _tokenExpires(), _sessionId(),
       _sessionExpires(std::chrono::system_clock::now()),
       _curl("https://api.themoviedb.org/3") {}
 
 Tmdb::~Tmdb() {}
 
-std::future<bool> Tmdb::post(const std::string_view url, const json &data) {
+std::future<bool> Tmdb::post(const std::string_view url, const json& data) {
   return _curl.post(addApiKey(url, _apiKey), data);
 }
 
@@ -67,18 +67,18 @@ std::future<json> Tmdb::get(const std::string_view url) {
   return _curl.get(addApiKey(url, _apiKey));
 }
 
-std::future<bool> Tmdb::del(const std::string_view url, const json &data) {
+std::future<bool> Tmdb::del(const std::string_view url, const json& data) {
   return _curl.del(addApiKey(url, _apiKey), data);
 }
 
-void Tmdb::setSession(const std::string &id,
-                      [[maybe_unused]] const std::string &expires) {
+void Tmdb::setSession(const std::string& id,
+                      [[maybe_unused]] const std::string& expires) {
   _sessionId = id;
   //_sessionExpires = expires;
 }
 
-void Tmdb::setToken(const std::string &req,
-                    [[maybe_unused]] const std::string &expires) {
+void Tmdb::setToken(const std::string& req,
+                    [[maybe_unused]] const std::string& expires) {
   _token = req;
   //_tokenExpires = expires;
 }
@@ -93,9 +93,9 @@ bool Tmdb::tokenExpired() const {
   return false; //_tokenExpires < std::chrono::system_clock::now();
 }
 
-void Tmdb::escapeString(std::string &str) const { _curl.escapeString(str); }
+void Tmdb::escapeString(std::string& str) const { _curl.escapeString(str); }
 
-std::string Tmdb::escapeString(const std::string &str) const {
+std::string Tmdb::escapeString(const std::string& str) const {
   return _curl.escapeString(str);
 }
 

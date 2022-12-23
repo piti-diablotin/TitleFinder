@@ -25,22 +25,22 @@
 #include <spdlog/common.h>
 
 #ifdef __GNUC__
-#if __GNUC__ >= 4
-#if __GNUC_MINOR__ >= 6
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Weffc++"
-#endif
-#endif
+#  if __GNUC__ >= 4
+#    if __GNUC_MINOR__ >= 6
+#      pragma GCC diagnostic push
+#      pragma GCC diagnostic ignored "-Weffc++"
+#    endif
+#  endif
 #endif
 #include "spdlog/cfg/env.h"
 #include "spdlog/sinks/ansicolor_sink.h"
 #include "spdlog/sinks/basic_file_sink.h"
 #ifdef __GNUC__
-#if __GNUC__ >= 4
-#if __GNUC_MINOR__ >= 6
-#pragma GCC diagnostic pop
-#endif
-#endif
+#  if __GNUC__ >= 4
+#    if __GNUC_MINOR__ >= 6
+#      pragma GCC diagnostic pop
+#    endif
+#  endif
 #endif
 
 namespace TitleFinder {
