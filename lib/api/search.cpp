@@ -30,19 +30,6 @@
 
 using nlohmann::json;
 
-namespace {
-template <class R>
-void fillSerchResult(TitleFinder::Api::Search::SearchResults<R>& result,
-                     json& data) {
-  if (data.contains("page"))
-    result.page = data["page"];
-  if (data.contains("total_pages"))
-    result.total_pages = data["total_pages"];
-  if (data.contains("total_results"))
-    result.total_results = data["total_results"];
-}
-} // namespace
-
 namespace TitleFinder {
 
 namespace Api {
@@ -65,6 +52,7 @@ Response_t Search::searchMovies(const optionalString language,
   fillEscapeQuery(options, region, _tmdb);
   fillQuery(options, year);
   fillQuery(options, primary_release_year);
+  options.pop_back(); // remove trailing &
 
   auto f = _tmdb->get(fmt::format("{}{}", url, options));
   f.wait();
@@ -74,28 +62,13 @@ Response_t Search::searchMovies(const optionalString language,
   CHECK_RESPONSE(j);
 
   auto rep = std::make_unique<SearchMoviesResults>();
-  fillSerchResult(*rep, j);
+  rep->from_json(j);
 
-  rep->results.resize(rep->total_results.value_or(0));
-  for (int i = 0; i < rep->total_results.value_or(0); ++i) {
+  rep->results.resize(rep->total_results);
+  for (int i = 0; i < rep->total_results; ++i) {
     auto& movie = j["results"][i];
-    MovieInfo& info = rep->results[i];
-    fillOption(info, movie, poster_path);
-    fillOption(info, movie, adult);
-    fillOption(info, movie, overview);
-    fillOption(info, movie, release_date);
-    fillOption(info, movie, id);
-    fillOption(info, movie, original_title);
-    fillOption(info, movie, original_language);
-    fillOption(info, movie, title);
-    fillOption(info, movie, backdrop_path);
-    fillOption(info, movie, popularity);
-    fillOption(info, movie, vote_count);
-    fillOption(info, movie, video);
-    fillOption(info, movie, vote_average);
-    if (movie.contains("genre_ids")) {
-      movie["genre_ids"].get_to(info.genre_ids);
-    }
+    auto& info = rep->results[i];
+    info.from_json(movie);
   }
 
   return rep;
@@ -117,6 +90,7 @@ Response_t Search::searchTvShows(const optionalString language,
   fillQuery(options, include_adult);
 
   fillQuery(options, first_air_date_year);
+  options.pop_back(); // remove trailing &
 
   auto f = _tmdb->get(fmt::format("{}{}", url, options));
   f.wait();
@@ -126,29 +100,13 @@ Response_t Search::searchTvShows(const optionalString language,
   CHECK_RESPONSE(j);
 
   auto rep = std::make_unique<SearchTvShowsResults>();
-  fillSerchResult(*rep, j);
+  rep->from_json(j);
 
-  rep->results.resize(rep->total_results.value_or(0));
-  for (int i = 0; i < rep->total_results.value_or(0); ++i) {
+  rep->results.resize(rep->total_results);
+  for (int i = 0; i < rep->total_results; ++i) {
     auto& show = j["results"][i];
-    TvShowInfo& info = rep->results[i];
-    fillOption(info, show, poster_path);
-    fillOption(info, show, popularity);
-    fillOption(info, show, id);
-    fillOption(info, show, backdrop_path);
-    fillOption(info, show, vote_average);
-    fillOption(info, show, overview);
-    fillOption(info, show, first_air_date);
-    fillOption(info, show, original_language);
-    fillOption(info, show, vote_count);
-    fillOption(info, show, name);
-    fillOption(info, show, original_name);
-    if (show.contains("genre_ids")) {
-      show["genre_ids"].get_to(info.genre_ids);
-    }
-    if (show.contains("origin_country")) {
-      show["origin_country"].get_to(info.origin_country);
-    }
+    auto& info = rep->results[i];
+    info.from_json(show);
   }
   return rep;
 }

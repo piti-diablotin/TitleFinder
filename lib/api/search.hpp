@@ -27,6 +27,7 @@
 
 #include "api/optionals.hpp"
 #include "api/response.hpp"
+#include "api/structs.hpp"
 #include "api/tmdb.hpp"
 
 namespace TitleFinder {
@@ -36,57 +37,24 @@ namespace Api {
 class Search {
 
 public:
-  struct MovieInfo {
-    optionalString poster_path;
-    optionalBool adult;
-    optionalString overview;
-    optionalString release_date;
-    std::vector<int> genre_ids;
-    optionalInt id;
-    optionalString original_title;
-    optionalString original_language;
-    optionalString title;
-    optionalString backdrop_path;
-    optionalDouble popularity;
-    optionalInt vote_count;
-    optionalBool video;
-    optionalDouble vote_average;
-    MovieInfo()
-        : poster_path(), adult(), overview(), release_date(), genre_ids(), id(),
-          original_title(), original_language(), title(), backdrop_path(),
-          popularity(), vote_count(), video(), vote_average() {}
-  };
-
-  struct TvShowInfo {
-    optionalString poster_path;
-    optionalDouble popularity;
-    optionalInt id;
-    optionalString backdrop_path;
-    optionalDouble vote_average;
-    optionalString overview;
-    optionalString first_air_date;
-    std::vector<std::string> origin_country;
-    std::vector<int> genre_ids;
-    optionalString original_language;
-    optionalInt vote_count;
-    optionalString name;
-    optionalString original_name;
-    TvShowInfo() = default;
-  };
-
   template <class R> class SearchResults : public Response {
   public:
-    optionalInt page;
+    int page;
     std::vector<R> results;
-    optionalInt total_results;
-    optionalInt total_pages;
+    int total_results;
+    int total_pages;
     SearchResults()
-        : Response(200), page(), results(), total_results(), total_pages() {}
+        : Response(200), page(0), results(), total_results(0), total_pages(0) {}
     ~SearchResults() = default;
+    inline void from_json(const nlohmann::json& data) {
+      page = data.value("page", page);
+      total_pages = data.value("total_pages", total_pages);
+      total_results = data.value("total_results", total_results);
+    }
   };
 
-  using SearchMoviesResults = SearchResults<MovieInfo>;
-  using SearchTvShowsResults = SearchResults<TvShowInfo>;
+  using SearchMoviesResults = SearchResults<MovieInfoCompact>;
+  using SearchTvShowsResults = SearchResults<TvShowInfoCompact>;
 
   /**
    * Empty constructor

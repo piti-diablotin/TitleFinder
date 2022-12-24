@@ -49,8 +49,7 @@ int main(int argc, char** argv) {
 
     if (s->results.size() > 0) {
       auto first = s->results[0];
-      std::cout << first.title.value_or("No title") << " ("
-                << first.release_date.value_or("0000-00-00").substr(0, 4) << ")"
+      std::cout << first.title << " (" << first.release_date.substr(0, 4) << ")"
                 << std::endl;
     }
   }
@@ -71,8 +70,7 @@ int main(int argc, char** argv) {
 
     if (s->results.size() > 0) {
       auto first = s->results[0];
-      std::cout << first.name.value_or("No title") << " ("
-                << first.first_air_date.value_or("0000-00-00").substr(0, 4)
+      std::cout << first.name << " (" << first.first_air_date.substr(0, 4)
                 << ")" << std::endl;
     }
   }
