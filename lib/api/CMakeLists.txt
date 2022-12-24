@@ -7,6 +7,7 @@ add_library(api
   logger.cpp
   search.cpp
   tmdb.cpp
+  tvseasons.cpp
   )
 
 add_library(titlefinder::api ALIAS api)

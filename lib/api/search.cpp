@@ -64,13 +64,6 @@ Response_t Search::searchMovies(const optionalString language,
   auto rep = std::make_unique<SearchMoviesResults>();
   rep->from_json(j);
 
-  rep->results.resize(rep->total_results);
-  for (int i = 0; i < rep->total_results; ++i) {
-    auto& movie = j["results"][i];
-    auto& info = rep->results[i];
-    info.from_json(movie);
-  }
-
   return rep;
 }
 
@@ -102,12 +95,6 @@ Response_t Search::searchTvShows(const optionalString language,
   auto rep = std::make_unique<SearchTvShowsResults>();
   rep->from_json(j);
 
-  rep->results.resize(rep->total_results);
-  for (int i = 0; i < rep->total_results; ++i) {
-    auto& show = j["results"][i];
-    auto& info = rep->results[i];
-    info.from_json(show);
-  }
   return rep;
 }
 

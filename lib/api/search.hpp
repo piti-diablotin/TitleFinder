@@ -46,10 +46,16 @@ public:
     SearchResults()
         : Response(200), page(0), results(), total_results(0), total_pages(0) {}
     ~SearchResults() = default;
-    inline void from_json(const nlohmann::json& data) {
-      page = data.value("page", page);
-      total_pages = data.value("total_pages", total_pages);
-      total_results = data.value("total_results", total_results);
+    inline void from_json(const nlohmann::json& j) {
+      fillOption(j, page);
+      fillOption(j, total_pages);
+      fillOption(j, total_results);
+      results.resize(total_results);
+      for (int i = 0; i < total_results; ++i) {
+        auto& show = j["results"][i];
+        auto& info = results[i];
+        info.from_json(show);
+      }
     }
   };
 

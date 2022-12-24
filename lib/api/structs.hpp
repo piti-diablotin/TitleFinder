@@ -94,6 +94,32 @@ struct TvShowInfoCompact : SearchInfo {
   }
 };
 
+struct Episode {
+  std::string air_date{"0000-00-00"};
+  int episode_number{-1};
+  int id{-1};
+  std::string name{"No Name"};
+  std::string overview{};
+  std::string production_code{};
+  int season_number{-1};
+  std::string still_path{};
+  double vote_average{0};
+  int vote_count{0};
+
+  inline void from_json(const nlohmann::json& j) {
+    fillOption(j, air_date);
+    fillOption(j, episode_number);
+    fillOption(j, id);
+    fillOption(j, name);
+    fillOption(j, overview);
+    fillOption(j, production_code);
+    fillOption(j, season_number);
+    fillOption(j, still_path);
+    fillOption(j, vote_average);
+    fillOption(j, vote_count);
+  }
+};
+
 } // namespace Api
 
 } // namespace TitleFinder
