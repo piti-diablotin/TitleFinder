@@ -59,6 +59,7 @@ struct SearchInfo {
       j["genre_ids"].get_to(genre_ids);
     }
   }
+  virtual ~SearchInfo() = default;
 };
 
 struct MovieInfoCompact : SearchInfo {
@@ -75,6 +76,7 @@ struct MovieInfoCompact : SearchInfo {
     fillOption(j, title);
     fillOption(j, video);
   }
+  ~MovieInfoCompact() override = default;
 };
 
 struct TvShowInfoCompact : SearchInfo {
@@ -91,6 +93,50 @@ struct TvShowInfoCompact : SearchInfo {
       j["origin_country"].get_to(origin_country);
     }
   }
+  ~TvShowInfoCompact() override = default;
+};
+
+struct TvShowInfo : TvShowInfoCompact {
+  std::vector<int> episode_run_time{};
+  std::map<int, std::string> genres{};
+  std::string homepage{};
+  bool in_production{false};
+  std::vector<std::string> languages{};
+  std::string last_air_date{};
+  int number_of_episodes{0};
+  int number_of_seasons{0};
+  std::string status{"Unknown"};
+  std::string tagline{};
+  std::string type{};
+  inline void from_json(const nlohmann::json& j) {
+    TvShowInfoCompact::from_json(j);
+    if (j.contains("episode_run_time")) {
+      j["episode_run_time"].get_to(episode_run_time);
+    }
+    if (j.contains("genres") && j["genres"].is_array()) {
+      auto& g = j["genres"];
+      for (size_t i = 0; i < g.size(); ++i) {
+        auto& gg = g[i];
+        genres.insert(
+            std::make_pair(gg.value("id", -1), gg.value("name", "Unknown")));
+      }
+    }
+    fillOption(j, homepage);
+    fillOption(j, in_production);
+    if (j.contains("languages")) {
+      j["languages"].get_to(languages);
+    }
+    fillOption(j, last_air_date);
+    fillOption(j, number_of_episodes);
+    fillOption(j, number_of_seasons);
+    if (j.contains("origin_country")) {
+      j["origin_country"].get_to(origin_country);
+    }
+    fillOption(j, status);
+    fillOption(j, tagline);
+    fillOption(j, type);
+  }
+  ~TvShowInfo() override = default;
 };
 
 struct Episode {
@@ -117,6 +163,7 @@ struct Episode {
     fillOption(j, vote_average);
     fillOption(j, vote_count);
   }
+  virtual ~Episode() = default;
 };
 
 } // namespace Api

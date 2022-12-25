@@ -8,6 +8,7 @@ add_library(api
   logger.cpp
   search.cpp
   tmdb.cpp
+  tv.cpp
   tvseasons.cpp
   )
 
