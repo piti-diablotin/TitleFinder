@@ -57,15 +57,15 @@ void Logger::buildLogger() {
   auto output_console_sink =
       std::make_shared<spdlog::sinks::ansicolor_stdout_sink_mt>();
 
-  auto output_file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(
-      "titlefinder_api.log", false);
+  //  auto output_file_sink =
+  //  std::make_shared<spdlog::sinks::basic_file_sink_mt>(
+  //      "titlefinder_api.log", false);
 
-  auto log = new spdlog::logger("TitleFinder::Api",
-                                {output_console_sink, output_file_sink});
+  auto log = new spdlog::logger("TitleFinder::Api", {output_console_sink});
   log->set_pattern(R"([%n] -%t- %^%v%$)");
 
 #ifndef NDEBUG
-  log->set_level(spdlog::level::trace);
+  log->set_level(spdlog::level::debug);
 #else
   log->set_level(spdlog::level::warn);
 #endif

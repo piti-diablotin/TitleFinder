@@ -52,11 +52,11 @@ public:
    */
   virtual ~Curl();
 
-  [[nodiscard]] std::future<bool> post(std::string_view url,
-                                       const nlohmann::json& data);
+  [[nodiscard]] std::future<nlohmann::json> post(std::string_view url,
+                                                 const nlohmann::json& data);
   [[nodiscard]] std::future<nlohmann::json> get(std::string_view url);
-  [[nodiscard]] std::future<bool> del(std::string_view url,
-                                      const nlohmann::json& data);
+  [[nodiscard]] std::future<nlohmann::json> del(std::string_view url,
+                                                const nlohmann::json& data);
 
   static void cleanUp();
 

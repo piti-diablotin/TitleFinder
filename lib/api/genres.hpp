@@ -1,5 +1,5 @@
 /**
- * @file api/tvseasons.hpp
+ * @file api/genre.hpp
  *
  * @brief
  *
@@ -23,6 +23,7 @@
 
 #pragma once
 
+#include <map>
 #include <memory>
 
 #include "api/optionals.hpp"
@@ -34,35 +35,21 @@ namespace TitleFinder {
 
 namespace Api {
 
-class TvSeasons {
+class Genres {
 
 public:
-  class Details : public Response {
+  class GenresList : public Response {
   public:
-    std::string _id;
-    std::string air_date;
-    std::vector<Episode> episodes;
-    std::string name;
-    std::string overview;
-    int id;
-    std::string poster_path;
-    int season_number;
-    Details();
-    ~Details() = default;
+    std::map<int, std::string> genres;
+    GenresList();
+    ~GenresList() = default;
     inline void from_json(const nlohmann::json& j) {
-      fillOption(j, _id);
-      fillOption(j, air_date);
-      fillOption(j, name);
-      fillOption(j, overview);
-      fillOption(j, id);
-      fillOption(j, poster_path);
-      fillOption(j, season_number);
-      if (j.contains("episodes") && j["episodes"].is_array()) {
-        episodes.resize(j["episodes"].size());
-        for (size_t i = 0; i < episodes.size(); ++i) {
-          auto& data = j["episodes"][i];
-          auto& ep = episodes[i];
-          ep.from_json(data);
+      if (j.contains("genres") && j["genres"].is_array()) {
+        auto& g = j["genres"];
+        for (size_t i = 0; i < g.size(); ++i) {
+          auto& gg = g[i];
+          genres.insert(
+              std::make_pair(gg.value("id", -1), gg.value("name", "Unknown")));
         }
       }
     }
@@ -71,14 +58,16 @@ public:
   /**
    * Empty constructor
    */
-  explicit TvSeasons(std::shared_ptr<Tmdb> tmdb);
+  explicit Genres(std::shared_ptr<Tmdb> tmdb);
 
   /**
    * Destructor
    */
-  virtual ~TvSeasons() = default;
+  virtual ~Genres() = default;
 
-  Response_t getDetails(int tv_id, int season_number, optionalString language);
+  Response_t getMovieList(optionalString language);
+
+  Response_t getTvList(optionalString language);
 
 private:
   std::shared_ptr<Tmdb> _tmdb;

@@ -1,5 +1,5 @@
 /**
- * @file api/tvseasons.cpp
+ * @file api/genre.cpp
  *
  * @brief
  *
@@ -21,41 +21,48 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "api/tvseasons.hpp"
-
-#include <fmt/format.h>
-#include <memory>
+#include "api/genres.hpp"
 
 #include "api/logger.hpp"
+#include "api/response.hpp"
+#include "api/tmdb.hpp"
+#include <memory>
+
+namespace {
+TitleFinder::Api::Response_t
+process(std::shared_ptr<TitleFinder::Api::Tmdb> tmdb,
+        const std::string_view url,
+        const TitleFinder::Api::optionalString language) {
+  std::string options;
+  fillEscapeQuery(options, language, tmdb);
+  if (options.back() == '&')
+    options.pop_back();
+
+  auto j = tmdb->get(fmt::format("{}{}", url, options));
+
+  CHECK_RESPONSE(j);
+
+  auto rep = std::make_unique<TitleFinder::Api::Genres::GenresList>();
+  rep->from_json(j);
+
+  return rep;
+}
+} // namespace
 
 namespace TitleFinder {
 
 namespace Api {
 
-TvSeasons::Details::Details()
-    : Response(200), _id(), air_date("0000-00-00"), episodes(0),
-      name("No Name"), overview(), id(-1), poster_path(), season_number(0) {}
+Genres::GenresList::GenresList() : Response(200), genres() {}
 
-TvSeasons::TvSeasons(std::shared_ptr<Tmdb> tmdb) : _tmdb(tmdb) {}
+Genres::Genres(std::shared_ptr<Tmdb> tmdb) : _tmdb(tmdb) {}
 
-Response_t TvSeasons::getDetails(const int tv_id, const int season_number,
-                                 const optionalString language) {
-  std::string url = fmt::format("/tv/{}/season/{}", tv_id, season_number);
+Response_t Genres::getMovieList(const optionalString language) {
+  return process(_tmdb, "/genre/movie/list", language);
+}
 
-  std::string options;
-
-  fillEscapeQuery(options, language, _tmdb);
-  if (options.back() == '&')
-    options.pop_back();
-
-  auto j = _tmdb->get(fmt::format("{}{}", url, options));
-
-  CHECK_RESPONSE(j);
-
-  auto rep = std::make_unique<Details>();
-  rep->from_json(j);
-
-  return rep;
+Response_t Genres::getTvList(const optionalString language) {
+  return process(_tmdb, "/genre/tv/list", language);
 }
 } // namespace Api
 

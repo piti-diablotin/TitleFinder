@@ -47,11 +47,11 @@ public:
    */
   virtual ~Tmdb();
 
-  [[nodiscard]] std::future<bool> post(std::string_view url,
-                                       const nlohmann::json& data);
-  [[nodiscard]] std::future<nlohmann::json> get(std::string_view url);
-  [[nodiscard]] std::future<bool> del(std::string_view url,
-                                      const nlohmann::json& data);
+  [[nodiscard]] nlohmann::json post(std::string_view url,
+                                    const nlohmann::json& data);
+  [[nodiscard]] nlohmann::json get(std::string_view url);
+  [[nodiscard]] nlohmann::json del(std::string_view url,
+                                   const nlohmann::json& data);
 
   void setSession(const std::string& id, const std::string& expires);
 

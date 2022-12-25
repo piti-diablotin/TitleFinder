@@ -75,13 +75,19 @@ private:
 using Response_t = std::unique_ptr<Response>;
 
 #define CHECK_RESPONSE(json__)                                                 \
-  if (json__.contains("status_code")) {                                        \
-    return std::make_unique<ErrorResponse>(                                    \
+  if (json__.contains("status_code") && json__["status_code"] >= 400) {        \
+    return std::make_unique<TitleFinder::Api::ErrorResponse>(                  \
         json__["status_code"],                                                 \
         json__.value("status_message", "No status message"));                  \
   } else if (json__.contains("success")) {                                     \
-    if (!json__["success"])                                                    \
-      return std::make_unique<ErrorResponse>(-1, json__["errors"][0]);         \
+    if (!json__["success"]) {                                                  \
+      if (json__.contains("errors"))                                           \
+        return std::make_unique<TitleFinder::Api::ErrorResponse>(              \
+            -1, json__["errors"][0]);                                          \
+      else                                                                     \
+        return std::make_unique<TitleFinder::Api::ErrorResponse>(              \
+            -1, json__.value("status_message", "No status/error message"));    \
+    }                                                                          \
   }
 
 #define fillQuery(string__, option__)                                          \

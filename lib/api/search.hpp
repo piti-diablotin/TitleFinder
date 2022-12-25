@@ -50,8 +50,8 @@ public:
       fillOption(j, page);
       fillOption(j, total_pages);
       fillOption(j, total_results);
-      results.resize(total_results);
-      for (int i = 0; i < total_results; ++i) {
+      results.resize(j["results"].size());
+      for (size_t i = 0; i < results.size(); ++i) {
         auto& show = j["results"][i];
         auto& info = results[i];
         info.from_json(show);
@@ -59,8 +59,8 @@ public:
     }
   };
 
-  using SearchMoviesResults = SearchResults<MovieInfoCompact>;
-  using SearchTvShowsResults = SearchResults<TvShowInfoCompact>;
+  using SearchMovies = SearchResults<MovieInfoCompact>;
+  using SearchTvShows = SearchResults<TvShowInfoCompact>;
 
   /**
    * Empty constructor

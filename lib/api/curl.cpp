@@ -81,17 +81,18 @@ void Curl::cleanUp() {
   _globalInit = false;
 }
 
-std::future<bool> Curl::post(const std::string_view url, const json& data) {
+std::future<json> Curl::post(const std::string_view url, const json& data) {
   std::string fullUrl = fmt::format("{}{}", _baseUrl, url);
 
   Logger()->debug("Sending post to {}", fullUrl);
   if (!_curl)
     throw std::runtime_error("Bad curl instance");
 
-  return std::async(std::launch::async, [=, &data]() -> bool {
+  return std::async(std::launch::async, [=, &data]() -> json {
     std::lock_guard Log(_resourceUsed);
     char errorStr[CURL_ERROR_SIZE]{0};
     std::string result;
+
     curl_easy_setopt(_curl, CURLOPT_URL, fullUrl.c_str());
     curl_easy_setopt(_curl, CURLOPT_HTTPGET, 1);
     curl_easy_setopt(_curl, CURLOPT_ERRORBUFFER, errorStr);
@@ -99,7 +100,23 @@ std::future<bool> Curl::post(const std::string_view url, const json& data) {
     curl_easy_setopt(_curl, CURLOPT_POST, 1L);
     curl_easy_setopt(_curl, CURLOPT_POSTFIELDS, data.dump().c_str());
     auto res = curl_easy_perform(_curl);
-    return res == CURLE_OK;
+    if (res != CURLE_OK) {
+      return json::parse(fmt::format(
+          R"({ status_message: "{}", status_code: {})", errorStr, res));
+    }
+    try {
+      return json::parse(result);
+    } catch (const std::exception& e) {
+      Logger()->error("Enable to parse json, received data is \n{}", result);
+      return json::parse(fmt::format(
+          R"({{ "status_message": "json parse error: {}", "status_code": {}}})",
+          e.what(), -1));
+    } catch (...) {
+      Logger()->error("Enable to parse json, received data is \n{}", result);
+      return json::parse(fmt::format(
+          R"({{ "status_message": "not an std::exception", "status_code": {}}})",
+          -2));
+    }
   });
 }
 
@@ -140,14 +157,14 @@ std::future<json> Curl::get(const std::string_view url) {
   });
 }
 
-std::future<bool> Curl::del(const std::string_view url, const json& data) {
+std::future<json> Curl::del(const std::string_view url, const json& data) {
   std::string fullUrl = fmt::format("{}{}", _baseUrl, url);
 
   Logger()->debug("Sending delete to {}", fullUrl);
   if (!_curl)
     throw std::runtime_error("Bad curl instance");
 
-  return std::async(std::launch::async, [=, &data]() -> bool {
+  return std::async(std::launch::async, [=, &data]() -> json {
     std::lock_guard Log(_resourceUsed);
     char errorStr[CURL_ERROR_SIZE]{0};
     std::string result;
@@ -158,7 +175,23 @@ std::future<bool> Curl::del(const std::string_view url, const json& data) {
     curl_easy_setopt(_curl, CURLOPT_WRITEDATA, static_cast<void*>(&result));
     curl_easy_setopt(_curl, CURLOPT_POSTFIELDS, data.dump().c_str());
     auto res = curl_easy_perform(_curl);
-    return res == CURLE_OK;
+    if (res != CURLE_OK) {
+      return json::parse(fmt::format(
+          R"({ status_message: "{}", status_code: {})", errorStr, res));
+    }
+    try {
+      return json::parse(result);
+    } catch (const std::exception& e) {
+      Logger()->error("Enable to parse json, received data is \n{}", result);
+      return json::parse(fmt::format(
+          R"({{ "status_message": "json parse error: {}", "status_code": {}}})",
+          e.what(), -1));
+    } catch (...) {
+      Logger()->error("Enable to parse json, received data is \n{}", result);
+      return json::parse(fmt::format(
+          R"({{ "status_message": "not an std::exception", "status_code": {}}})",
+          -2));
+    }
   });
 }
 

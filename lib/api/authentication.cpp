@@ -35,10 +35,7 @@ Authentication::RequestToken::RequestToken()
 Authentication::Authentication(std::shared_ptr<Tmdb> tmdb) : _tmdb(tmdb) {}
 
 Response_t Authentication::createRequestToken() {
-  auto f = _tmdb->get("/authentication/token/new");
-  f.wait();
-  auto j = f.get();
-  Logger()->debug("{}:\n{}", __FUNCTION__, j.dump(2));
+  auto j = _tmdb->get("/authentication/token/new");
 
   CHECK_RESPONSE(j);
 

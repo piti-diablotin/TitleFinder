@@ -54,14 +54,11 @@ Response_t Search::searchMovies(const optionalString language,
   fillQuery(options, primary_release_year);
   options.pop_back(); // remove trailing &
 
-  auto f = _tmdb->get(fmt::format("{}{}", url, options));
-  f.wait();
-  auto j = f.get();
-  Logger()->debug("{}:\n{}", __FUNCTION__, j.dump(2));
+  auto j = _tmdb->get(fmt::format("{}{}", url, options));
 
   CHECK_RESPONSE(j);
 
-  auto rep = std::make_unique<SearchMoviesResults>();
+  auto rep = std::make_unique<SearchMovies>();
   rep->from_json(j);
 
   return rep;
@@ -85,14 +82,11 @@ Response_t Search::searchTvShows(const optionalString language,
   fillQuery(options, first_air_date_year);
   options.pop_back(); // remove trailing &
 
-  auto f = _tmdb->get(fmt::format("{}{}", url, options));
-  f.wait();
-  auto j = f.get();
-  Logger()->debug("{}:\n{}", __FUNCTION__, j.dump(2));
+  auto j = _tmdb->get(fmt::format("{}{}", url, options));
 
   CHECK_RESPONSE(j);
 
-  auto rep = std::make_unique<SearchTvShowsResults>();
+  auto rep = std::make_unique<SearchTvShows>();
   rep->from_json(j);
 
   return rep;

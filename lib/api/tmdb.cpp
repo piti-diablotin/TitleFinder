@@ -22,12 +22,15 @@
  */
 
 #include "tmdb.hpp"
+
 #include <chrono>
 #include <fmt/format.h>
 #include <future>
 #include <memory>
 #include <string_view>
 #include <system_error>
+
+#include "api/logger.hpp"
 
 namespace {
 std::string addApiKey(std::string_view url, const std::string& key) {
@@ -59,16 +62,28 @@ Tmdb::Tmdb(const std::string& apiKey)
 
 Tmdb::~Tmdb() {}
 
-std::future<bool> Tmdb::post(const std::string_view url, const json& data) {
-  return _curl.post(addApiKey(url, _apiKey), data);
+json Tmdb::post(const std::string_view url, const json& data) {
+  auto req = _curl.post(addApiKey(url, _apiKey), data);
+  req.wait();
+  auto j = req.get();
+  Logger()->trace("{}:\n{}", __FUNCTION__, j.dump(2));
+  return j;
 }
 
-std::future<json> Tmdb::get(const std::string_view url) {
-  return _curl.get(addApiKey(url, _apiKey));
+json Tmdb::get(const std::string_view url) {
+  auto req = _curl.get(addApiKey(url, _apiKey));
+  req.wait();
+  auto j = req.get();
+  Logger()->trace("{}:\n{}", __FUNCTION__, j.dump(2));
+  return j;
 }
 
-std::future<bool> Tmdb::del(const std::string_view url, const json& data) {
-  return _curl.del(addApiKey(url, _apiKey), data);
+json Tmdb::del(const std::string_view url, const json& data) {
+  auto req = _curl.del(addApiKey(url, _apiKey), data);
+  req.wait();
+  auto j = req.get();
+  Logger()->trace("{}:\n{}", __FUNCTION__, j.dump(2));
+  return j;
 }
 
 void Tmdb::setSession(const std::string& id,
