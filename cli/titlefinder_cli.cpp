@@ -47,6 +47,7 @@ int main(int argc, char** argv) {
         parser.getOption<std::string>("api_key"));
 
     TitleFinder::Api::Authentication auth(tmdb);
+    TitleFinder::Api::Genres genres(tmdb);
 
     auto rep = auth.createRequestToken();
     CAST_REPONSE(rep, TitleFinder::Api::Authentication::RequestToken, token);
@@ -58,22 +59,28 @@ int main(int argc, char** argv) {
 
       CAST_REPONSE(rep, TitleFinder::Api::Search::SearchMovies, s);
 
-      if (s->results.size() > 0) {
-        auto& first = s->results[0];
-        std::cout << fmt::format("|{}|{}|{:2.0f}%|", first.title,
-                                 first.release_date.substr(0, 4),
-                                 first.vote_average * 10)
-                  << std::endl;
-        if (!first.genre_ids.empty() && parser.isSetOption("genre")) {
-          TitleFinder::Api::Genres genres(tmdb);
-          auto gr = genres.getMovieList({});
-          CAST_REPONSE(gr, TitleFinder::Api::Genres::GenresList, mgenre);
-          for (size_t i = 0; i < first.genre_ids.size(); ++i) {
-            std::cout << mgenre->genres[first.genre_ids[i]];
-            if (i < first.genre_ids.size() - 1)
-              std::cout << ", ";
+      if (parser.isSetOption("genre")) {
+        auto gr = genres.getMovieList({});
+        CAST_REPONSE(gr, TitleFinder::Api::Genres::GenresList, mgenre);
+
+        for (auto& f : s->results) {
+          std::string fg;
+          for (size_t i = 0; i < f.genre_ids.size(); ++i) {
+            fg.append(mgenre->genres[f.genre_ids[i]]);
+            if (i < f.genre_ids.size() - 1)
+              fg.append(", ");
           }
-          std::cout << std::endl;
+          std::cout << fmt::format("|{}|{}|{}|{:2.0f}%|", f.title,
+                                   f.release_date.substr(0, 4), fg,
+                                   f.vote_average * 10)
+                    << std::endl;
+        }
+      } else {
+        for (auto& f : s->results) {
+          std::cout << fmt::format("|{}|{}|{:2.0f}%|", f.title,
+                                   f.release_date.substr(0, 4),
+                                   f.vote_average * 10)
+                    << std::endl;
         }
       }
     }
