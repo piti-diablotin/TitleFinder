@@ -92,7 +92,9 @@ File::File(const std::string_view fileuri)
     if (title != nullptr) {
       Logger()->debug("  title: {}", title->value);
     }
-    if (codecParams->codec_type == AVMEDIA_TYPE_AUDIO) {
+    AVDictionaryEntry* dictEntry = nullptr;
+    switch (codecParams->codec_type) {
+    case AVMEDIA_TYPE_AUDIO:
       if (name == "aac")
         _audioCodec = ACodec::Aac;
       else if (name == "ac3")
@@ -101,10 +103,14 @@ File::File(const std::string_view fileuri)
         _audioCodec = ACodec::Mp3;
       else
         _audioCodec = ACodec::Other;
-      AVDictionaryEntry* lang = av_dict_get(meta, "language", nullptr, 0);
-      if (lang)
-        Logger()->debug("  language:{}", lang->value);
-    } else if (codecParams->codec_type == AVMEDIA_TYPE_VIDEO) {
+      dictEntry = av_dict_get(meta, "language", nullptr, 0);
+      if (dictEntry) {
+        Logger()->debug("  language:{}", dictEntry->value);
+        _languages.push_back(std::string(dictEntry->value));
+      }
+
+      break;
+    case AVMEDIA_TYPE_VIDEO:
       if (name == "av1")
         _videoCodec = VCodec::Av1;
       else if (name == "h264")
@@ -115,6 +121,16 @@ File::File(const std::string_view fileuri)
         _videoCodec = VCodec::Mpeg4;
       else
         _audioCodec = ACodec::Other;
+      break;
+    case AVMEDIA_TYPE_SUBTITLE:
+      dictEntry = av_dict_get(meta, "language", nullptr, 0);
+      if (dictEntry) {
+        Logger()->debug("  subtitles:{}", dictEntry->value);
+        _subtitles.push_back(std::string(dictEntry->value));
+      }
+      break;
+    default:
+      continue;
     }
   }
 }

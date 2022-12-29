@@ -47,7 +47,8 @@ public:
   enum class ACodec { Mp3, Aac, Ac3, Other };
   enum class VCodec { H264, Hevc, Av1, Mpeg4, Other };
   enum class Container { Mkv, Avi, Mp4, Other };
-  using Lang = char[3];
+  using Lang = std::string;
+
   /**
    * Empty constructor
    */
@@ -69,6 +70,7 @@ public:
 private:
   std::filesystem::path _path;
   std::vector<Lang> _languages;
+  std::vector<Lang> _subtitles;
   VCodec _videoCodec;
   ACodec _audioCodec;
   Container _container;
