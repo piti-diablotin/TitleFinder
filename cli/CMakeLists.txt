@@ -6,5 +6,6 @@ add_executable(titlefinder_cli
 target_link_libraries(titlefinder_cli
   PRIVATE
   titlefinder::api
+  titlefinder::media
   fmt::fmt
   )

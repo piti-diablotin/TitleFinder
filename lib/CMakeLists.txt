@@ -1,3 +1,4 @@
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/api)
-
+add_subdirectory(api)
+add_subdirectory(logger)
+add_subdirectory(media)
 

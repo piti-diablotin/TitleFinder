@@ -23,6 +23,7 @@ target_link_libraries(api
   PUBLIC
   nlohmann_json::nlohmann_json
   PRIVATE
+  titlefinder::logger
   CURL::libcurl
-  spdlog::spdlog
+  fmt::fmt
   )

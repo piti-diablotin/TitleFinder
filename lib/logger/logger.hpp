@@ -1,5 +1,5 @@
 /**
- * @file api/logger.hpp
+ * @file logger/logger.hpp
  *
  * @brief
  *
@@ -23,24 +23,32 @@
 
 #pragma once
 
-#include <memory>
+#ifdef __GNUC__
+#  if __GNUC__ >= 4
+#    if __GNUC_MINOR__ >= 6
+#      pragma GCC diagnostic push
+#      pragma GCC diagnostic ignored "-Weffc++"
+#    endif
+#  endif
+#  pragma GCC system_header
+#endif
+#include "spdlog/spdlog.h"
+#ifdef __GNUC__
+#  if __GNUC__ >= 4
+#    if __GNUC_MINOR__ >= 6
+#      pragma GCC diagnostic pop
+#    endif
+#  endif
+#endif
 
-#include "logger/logger.hpp"
-
-namespace spdlog {
-class logger;
-}
+#include "string_view"
 
 namespace TitleFinder {
 
-namespace Api {
+namespace Logger {
 
-/**
- * Get the default logger
- * @return The logger to use inside epegen
- */
-std::shared_ptr<spdlog::logger> Logger();
+std::shared_ptr<spdlog::logger> getLogger(const std::string& name);
 
-} // namespace Api
+} // namespace Logger
 
 } // namespace TitleFinder

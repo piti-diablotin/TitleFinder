@@ -5,9 +5,11 @@
 #include "api/tmdb.hpp"
 #include "api/tv.hpp"
 #include "api/tvseasons.hpp"
+#include "media/file.hpp"
 #include "parser.hpp"
 
 #include <iostream>
+#include <memory>
 #include <sstream>
 
 #define CAST_REPONSE(rep__, type__, dest__)                                    \
@@ -31,6 +33,7 @@ int main(int argc, char** argv) {
   parser.setOption("show", 's', "Breaking Bad", "TV Show (quoted)");
   parser.setOption("info", 'i', "Print additional information");
   parser.setOption("genre", 'g', "Print additional information");
+  parser.setOption("file", 'f', "", "File to analyse");
   parser.parse();
 
   if (parser.isSetOption("help")) {
@@ -38,89 +41,101 @@ int main(int argc, char** argv) {
     return 0;
   }
 
-  auto tmdb =
-      TitleFinder::Api::Tmdb::create(parser.getOption<std::string>("api_key"));
+  std::shared_ptr<TitleFinder::Api::Tmdb> tmdb;
+  if (parser.isSetOption("movie") || parser.isSetOption("show")) {
+    tmdb = TitleFinder::Api::Tmdb::create(
+        parser.getOption<std::string>("api_key"));
 
-  TitleFinder::Api::Authentication auth(tmdb);
+    TitleFinder::Api::Authentication auth(tmdb);
 
-  auto rep = auth.createRequestToken();
-  CAST_REPONSE(rep, TitleFinder::Api::Authentication::RequestToken, token);
+    auto rep = auth.createRequestToken();
+    CAST_REPONSE(rep, TitleFinder::Api::Authentication::RequestToken, token);
 
-  TitleFinder::Api::Search search(tmdb);
-  if (parser.isSetOption("movie")) {
-    rep = search.searchMovies({}, parser.getOption<std::string>("movie"), {},
-                              {}, {}, {}, {});
+    TitleFinder::Api::Search search(tmdb);
+    if (parser.isSetOption("movie")) {
+      rep = search.searchMovies({}, parser.getOption<std::string>("movie"), {},
+                                {}, {}, {}, {});
 
-    CAST_REPONSE(rep, TitleFinder::Api::Search::SearchMovies, s);
+      CAST_REPONSE(rep, TitleFinder::Api::Search::SearchMovies, s);
 
-    if (s->results.size() > 0) {
-      auto& first = s->results[0];
-      std::cout << first.title << " (" << first.release_date.substr(0, 4)
-                << ") " << first.vote_average * 10 << "%" << std::endl;
-      if (!first.genre_ids.empty() && parser.isSetOption("genre")) {
-        TitleFinder::Api::Genres genres(tmdb);
-        auto gr = genres.getMovieList({});
-        CAST_REPONSE(gr, TitleFinder::Api::Genres::GenresList, mgenre);
-        for (auto id : first.genre_ids) {
-          std::cout << mgenre->genres[id] << ", ";
+      if (s->results.size() > 0) {
+        auto& first = s->results[0];
+        std::cout << fmt::format("|{}|{}|{:2.0f}%|", first.title,
+                                 first.release_date.substr(0, 4),
+                                 first.vote_average * 10)
+                  << std::endl;
+        if (!first.genre_ids.empty() && parser.isSetOption("genre")) {
+          TitleFinder::Api::Genres genres(tmdb);
+          auto gr = genres.getMovieList({});
+          CAST_REPONSE(gr, TitleFinder::Api::Genres::GenresList, mgenre);
+          for (size_t i = 0; i < first.genre_ids.size(); ++i) {
+            std::cout << mgenre->genres[first.genre_ids[i]];
+            if (i < first.genre_ids.size() - 1)
+              std::cout << ", ";
+          }
+          std::cout << std::endl;
         }
-        std::cout << std::endl;
       }
     }
-  }
 
-  if (parser.isSetOption("show")) {
-    rep = search.searchTvShows({}, {}, parser.getOption<std::string>("show"),
-                               {}, {});
+    if (parser.isSetOption("show")) {
+      rep = search.searchTvShows({}, {}, parser.getOption<std::string>("show"),
+                                 {}, {});
 
-    CAST_REPONSE(rep, TitleFinder::Api::Search::SearchTvShows, s);
+      CAST_REPONSE(rep, TitleFinder::Api::Search::SearchTvShows, s);
 
-    if (s->results.size() > 0) {
-      auto& first = s->results[0];
-      std::cout << first.name << " (" << first.first_air_date.substr(0, 4)
-                << ") " << first.vote_average * 10 << "%" << std::endl;
+      if (s->results.size() > 0) {
+        auto& first = s->results[0];
+        std::cout << first.name << " (" << first.first_air_date.substr(0, 4)
+                  << ") " << first.vote_average * 10 << "%" << std::endl;
 
-      if (!first.genre_ids.empty() && parser.isSetOption("genre")) {
-        TitleFinder::Api::Genres genres(tmdb);
-        auto gr = genres.getTvList({});
-        CAST_REPONSE(gr, TitleFinder::Api::Genres::GenresList, tvgenre);
-        for (auto id : first.genre_ids) {
-          std::cout << tvgenre->genres[id] << ", ";
+        if (!first.genre_ids.empty() && parser.isSetOption("genre")) {
+          TitleFinder::Api::Genres genres(tmdb);
+          auto gr = genres.getTvList({});
+          CAST_REPONSE(gr, TitleFinder::Api::Genres::GenresList, tvgenre);
+          for (auto id : first.genre_ids) {
+            std::cout << tvgenre->genres[id] << ", ";
+          }
+          std::cout << std::endl;
         }
-        std::cout << std::endl;
-      }
 
-      if (parser.isSetOption("info")) {
-        TitleFinder::Api::Tv tv(tmdb);
-        auto rep2 = tv.getDetails(first.id, {});
-        CAST_REPONSE(rep2, TitleFinder::Api::Tv::Details, tvshow);
-        std::cout << tvshow->number_of_seasons << " seasons" << std::endl;
+        if (parser.isSetOption("info")) {
+          TitleFinder::Api::Tv tv(tmdb);
+          auto rep2 = tv.getDetails(first.id, {});
+          CAST_REPONSE(rep2, TitleFinder::Api::Tv::Details, tvshow);
+          std::cout << tvshow->number_of_seasons << " seasons" << std::endl;
 
-        TitleFinder::Api::TvSeasons tvseasons(tmdb);
-        for (int si = 1; si <= tvshow->number_of_seasons; ++si) {
-          auto details = tvseasons.getDetails(first.id, si, {});
-          if (details->getCode() == 200) {
-            auto* season = dynamic_cast<TitleFinder::Api::TvSeasons::Details*>(
-                details.get());
-            int SN = season->season_number;
+          TitleFinder::Api::TvSeasons tvseasons(tmdb);
+          for (int si = 1; si <= tvshow->number_of_seasons; ++si) {
+            auto details = tvseasons.getDetails(first.id, si, {});
+            if (details->getCode() == 200) {
+              auto* season =
+                  dynamic_cast<TitleFinder::Api::TvSeasons::Details*>(
+                      details.get());
+              int SN = season->season_number;
 
-            size_t len = 0;
-            for (auto& ep : season->episodes)
-              if (ep.name.size() > len)
-                len = ep.name.size();
-            std::ostringstream format;
-            format << "{} S{:02}E{:02} {: <" << len << "s} {:.0f}%";
+              size_t len = 0;
+              for (auto& ep : season->episodes)
+                if (ep.name.size() > len)
+                  len = ep.name.size();
+              std::ostringstream format;
+              format << "{} S{:02}E{:02} {: <" << len << "s} {:.0f}%";
 
-            for (auto& ep : season->episodes) {
-              std::cout << fmt::format(format.str(), first.name, SN,
-                                       ep.episode_number, ep.name,
-                                       ep.vote_average * 10)
-                        << std::endl;
+              for (auto& ep : season->episodes) {
+                std::cout << fmt::format(format.str(), first.name, SN,
+                                         ep.episode_number, ep.name,
+                                         ep.vote_average * 10)
+                          << std::endl;
+              }
             }
           }
         }
       }
     }
+  }
+
+  if (parser.isSetOption("file")) {
+    TitleFinder::Media::File file(parser.getOption<std::string>("file"));
   }
 
   return 0;

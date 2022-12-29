@@ -1,7 +1,7 @@
 /**
- * @file api/logger.hpp
+ * @file api/logger.cpp
  *
- * @brief
+ * @brief Comfigure logger
  *
  * @author Jordan Bieder
  *
@@ -21,26 +21,23 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
-
-#include <memory>
-
+#include "media/logger.hpp"
 #include "logger/logger.hpp"
 
-namespace spdlog {
-class logger;
+namespace {
+std::shared_ptr<spdlog::logger> _logger(nullptr);
 }
 
 namespace TitleFinder {
 
-namespace Api {
+namespace Media {
 
-/**
- * Get the default logger
- * @return The logger to use inside epegen
- */
-std::shared_ptr<spdlog::logger> Logger();
+std::shared_ptr<spdlog::logger> Logger() {
+  if (!_logger)
+    _logger = Logger::getLogger("Media");
+  return _logger;
+}
 
-} // namespace Api
+} // namespace Media
 
 } // namespace TitleFinder

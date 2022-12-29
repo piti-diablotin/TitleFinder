@@ -22,62 +22,19 @@
  */
 
 #include "api/logger.hpp"
-#include <spdlog/common.h>
+#include "logger/logger.hpp"
 
-#ifdef __GNUC__
-#  if __GNUC__ >= 4
-#    if __GNUC_MINOR__ >= 6
-#      pragma GCC diagnostic push
-#      pragma GCC diagnostic ignored "-Weffc++"
-#    endif
-#  endif
-#endif
-#include "spdlog/cfg/env.h"
-#include "spdlog/sinks/ansicolor_sink.h"
-#include "spdlog/sinks/basic_file_sink.h"
-#ifdef __GNUC__
-#  if __GNUC__ >= 4
-#    if __GNUC_MINOR__ >= 6
-#      pragma GCC diagnostic pop
-#    endif
-#  endif
-#endif
+namespace {
+std::shared_ptr<spdlog::logger> _logger(nullptr);
+}
 
 namespace TitleFinder {
 
 namespace Api {
 
-std::shared_ptr<spdlog::logger> Logger::_logger(nullptr);
-std::mutex Logger::_m;
-
-void Logger::buildLogger() {
-  std::unique_lock lk(_m);
-  if (_logger)
-    return;
-  auto output_console_sink =
-      std::make_shared<spdlog::sinks::ansicolor_stdout_sink_mt>();
-
-  //  auto output_file_sink =
-  //  std::make_shared<spdlog::sinks::basic_file_sink_mt>(
-  //      "titlefinder_api.log", false);
-
-  auto log = new spdlog::logger("TitleFinder::Api", {output_console_sink});
-  log->set_pattern(R"([%n] -%t- %^%v%$)");
-
-#ifndef NDEBUG
-  log->set_level(spdlog::level::debug);
-#else
-  log->set_level(spdlog::level::warn);
-#endif
-  _logger.reset(log);
-  spdlog::register_logger(_logger);
-  spdlog::cfg::load_env_levels();
-  _logger->info("Logger level to {}", _logger->level());
-}
-
-std::shared_ptr<spdlog::logger> Logger::getLogger() {
+std::shared_ptr<spdlog::logger> Logger() {
   if (!_logger)
-    buildLogger();
+    _logger = Logger::getLogger("Api");
   return _logger;
 }
 

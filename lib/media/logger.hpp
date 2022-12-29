@@ -23,9 +23,9 @@
 
 #pragma once
 
-#include <memory>
-
 #include "logger/logger.hpp"
+
+#include <memory>
 
 namespace spdlog {
 class logger;
@@ -33,7 +33,7 @@ class logger;
 
 namespace TitleFinder {
 
-namespace Api {
+namespace Media {
 
 /**
  * Get the default logger
@@ -41,6 +41,6 @@ namespace Api {
  */
 std::shared_ptr<spdlog::logger> Logger();
 
-} // namespace Api
+} // namespace Media
 
 } // namespace TitleFinder
