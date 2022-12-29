@@ -4,9 +4,6 @@ find_library(AVCODEC_LIBRARY avcodec)
 find_path(AVFORMAT_INCLUDE_DIR libavformat/avformat.h)
 find_library(AVFORMAT_LIBRARY avformat)
 
-find_path(SWRESAMPLE_INCLUDE_DIR libswresample/swresample.h)
-find_library(SWRESAMPLE_LIBRARY swresample)
-
 find_path(AVUTIL_INCLUDE_DIR libavutil/avutil.h)
 find_library(AVUTIL_LIBRARY avutil)
 
@@ -31,5 +28,4 @@ target_link_libraries(
   ${AVUTIL_LIBRARY}
   ${AVCODEC_LIBRARY}
   ${AVFORMAT_LIBRARY}
-  ${SWRESAMPLE_LIBRARY}
   )
