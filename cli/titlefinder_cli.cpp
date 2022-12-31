@@ -5,7 +5,7 @@
 #include "api/tmdb.hpp"
 #include "api/tv.hpp"
 #include "api/tvseasons.hpp"
-#include "media/file.hpp"
+#include "media/fileinfo.hpp"
 #include "parser.hpp"
 
 #include <iostream>
@@ -41,7 +41,7 @@ int main(int argc, char** argv) {
     return 0;
   }
 
-  std::shared_ptr<TitleFinder::Api::Tmdb> tmdb;
+  std::shared_ptr<TitleFinder::Api::Tmdb> tmdb(nullptr);
   if (parser.isSetOption("movie") || parser.isSetOption("show")) {
     tmdb = TitleFinder::Api::Tmdb::create(
         parser.getOption<std::string>("api_key"));
@@ -142,7 +142,7 @@ int main(int argc, char** argv) {
   }
 
   if (parser.isSetOption("file")) {
-    TitleFinder::Media::File file(parser.getOption<std::string>("file"));
+    TitleFinder::Media::FileInfo file(parser.getOption<std::string>("file"));
   }
 
   return 0;

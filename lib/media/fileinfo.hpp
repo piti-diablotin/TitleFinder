@@ -1,5 +1,5 @@
 /**
- * @file media/file.hpp
+ * @file media/fileinfo.hpp
  *
  * @brief
  *
@@ -30,6 +30,8 @@
 #include <string_view>
 #include <vector>
 
+#include "media/file.hpp"
+
 extern "C" {
 struct AVFormatContext;
 struct AVCodecContext;
@@ -41,46 +43,18 @@ namespace TitleFinder {
 
 namespace Media {
 
-class File {
+class FileInfo : public File {
 
 public:
-  enum class ACodec { Mp3, Aac, Ac3, Other };
-  enum class VCodec { H264, Hevc, Av1, Mpeg4, Other };
-  enum class Container { Mkv, Avi, Mp4, Other };
-  using Lang = std::string;
+  /**
+   * Empty constructor
+   */
+  explicit FileInfo(std::string_view fileuri);
 
   /**
    * Destructor
    */
-  virtual ~File() = default;
-
-  virtual VCodec getVideoCodec() const;
-
-  virtual ACodec getAudioCodec() const;
-
-  virtual const std::vector<Lang>& getLanguages() const;
-
-  virtual const std::vector<Lang>& getSubtitles() const;
-
-  virtual std::filesystem::path getPath() const;
-
-protected:
-  /**
-   * Empty constructor
-   */
-  explicit File(std::string_view fileuri);
-
-  std::filesystem::path _path;
-  std::vector<Lang> _languages;
-  std::vector<Lang> _subtitles;
-  VCodec _videoCodec;
-  ACodec _audioCodec;
-  Container _container;
-
-  std::unique_ptr<AVFormatContext, std::function<void(AVFormatContext*)>>
-      _formatCtxt;
-  std::unique_ptr<AVCodecContext, std::function<void(AVCodecContext*)>>
-      _codecCtxt;
+  virtual ~FileInfo() override = default;
 };
 
 } // namespace Media

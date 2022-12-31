@@ -10,6 +10,7 @@ find_library(AVUTIL_LIBRARY avutil)
 add_library(
   media
   file.cpp
+  fileinfo.cpp
   logger.cpp
   )
 

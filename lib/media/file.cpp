@@ -37,8 +37,8 @@ namespace TitleFinder {
 
 namespace Media {
 
-File::File(const std::string_view fileuri)
-    : _path(fileuri), _languages(), _videoCodec(VCodec::Other),
+File::File(std::string_view fileuri)
+    : _path(fileuri), _languages(), _subtitles(), _videoCodec(VCodec::Other),
       _audioCodec(ACodec::Other),
       _container(Container::Other), _formatCtxt{nullptr,
                                                 [](AVFormatContext* ctxt) {
@@ -50,96 +50,15 @@ File::File(const std::string_view fileuri)
       _codecCtxt{nullptr, [](AVCodecContext* ctxt) {
                    if (ctxt != nullptr)
                      avcodec_free_context(&ctxt);
-                 }} {
-  // Open file
-  AVFormatContext* fc = nullptr;
-  if (avformat_open_input(&fc, _path.c_str(), NULL, NULL) != 0) {
-    Logger()->error("Unable to open input file {}", _path.string());
-    return;
-  }
-  _formatCtxt.reset(fc);
-  if (avformat_find_stream_info(fc, NULL) != 0) {
-    Logger()->error("Unable to find stream info for file {}", _path.string());
-  }
-  Logger()->debug("Format name is {} ({})", fc->iformat->name, _path.string());
-  std::string_view demuxer{fc->iformat->name};
-  if (demuxer.find("mastroska") != std::string_view::npos) {
-    _container = Container::Mkv;
-  } else if (demuxer.find("mp4") != std::string_view::npos) {
-    _container = Container::Mp4;
-  } else if (demuxer.find("avi") != std::string_view::npos) {
-    _container = Container::Avi;
-  } else {
-    _container = Container::Other;
-  }
-
-  AVDictionaryEntry* mediaTitle =
-      av_dict_get(fc->metadata, "title", nullptr, 0);
-  if (mediaTitle != nullptr) {
-    Logger()->debug("Title: {}", mediaTitle->value);
-  }
-
-  for (unsigned i = 0; i < fc->nb_streams; ++i) {
-    AVCodecParameters* codecParams = fc->streams[i]->codecpar;
-    const AVCodecDescriptor* codecDesc =
-        avcodec_descriptor_get(codecParams->codec_id);
-    std::string_view name;
-    if (codecDesc != nullptr)
-      name = codecDesc->name;
-    Logger()->debug("Stream [{}] is {}", i, name);
-    AVDictionary* meta = fc->streams[i]->metadata;
-    AVDictionaryEntry* title = av_dict_get(meta, "title", nullptr, 0);
-    if (title != nullptr) {
-      Logger()->debug("  title: {}", title->value);
-    }
-    AVDictionaryEntry* dictEntry = nullptr;
-    switch (codecParams->codec_type) {
-    case AVMEDIA_TYPE_AUDIO:
-      if (name == "aac")
-        _audioCodec = ACodec::Aac;
-      else if (name == "ac3")
-        _audioCodec = ACodec::Ac3;
-      else if (name == "mp3")
-        _audioCodec = ACodec::Mp3;
-      else
-        _audioCodec = ACodec::Other;
-      dictEntry = av_dict_get(meta, "language", nullptr, 0);
-      if (dictEntry) {
-        Logger()->debug("  language:{}", dictEntry->value);
-        _languages.push_back(std::string(dictEntry->value));
-      }
-
-      break;
-    case AVMEDIA_TYPE_VIDEO:
-      if (name == "av1")
-        _videoCodec = VCodec::Av1;
-      else if (name == "h264")
-        _videoCodec = VCodec::H264;
-      else if (name == "hevc")
-        _videoCodec = VCodec::Hevc;
-      else if (name == "mpeg4")
-        _videoCodec = VCodec::Mpeg4;
-      else
-        _audioCodec = ACodec::Other;
-      break;
-    case AVMEDIA_TYPE_SUBTITLE:
-      dictEntry = av_dict_get(meta, "language", nullptr, 0);
-      if (dictEntry) {
-        Logger()->debug("  subtitles:{}", dictEntry->value);
-        _subtitles.push_back(std::string(dictEntry->value));
-      }
-      break;
-    default:
-      continue;
-    }
-  }
-}
+                 }} {}
 
 File::VCodec File::getVideoCodec() const { return _videoCodec; }
 
 File::ACodec File::getAudioCodec() const { return _audioCodec; }
 
 const std::vector<File::Lang>& File::getLanguages() const { return _languages; }
+
+const std::vector<File::Lang>& File::getSubtitles() const { return _subtitles; }
 
 std::filesystem::path File::getPath() const { return _path; }
 
