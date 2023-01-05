@@ -82,14 +82,20 @@ FileInfo::FileInfo(const std::string_view fileuri) : File(fileuri) {
     AVDictionaryEntry* dictEntry = nullptr;
     switch (codecParams->codec_type) {
     case AVMEDIA_TYPE_AUDIO:
-      if (name == "aac")
+      switch (codecParams->codec_id) {
+      case AV_CODEC_ID_AAC:
         _audioCodec = ACodec::Aac;
-      else if (name == "ac3")
+        break;
+      case AV_CODEC_ID_AC3:
         _audioCodec = ACodec::Ac3;
-      else if (name == "mp3")
+        break;
+      case AV_CODEC_ID_MP3:
         _audioCodec = ACodec::Mp3;
-      else
+        break;
+      default:
         _audioCodec = ACodec::Other;
+        break;
+      }
       dictEntry = av_dict_get(meta, "language", nullptr, 0);
       if (dictEntry) {
         Logger()->debug("  language:{}", dictEntry->value);
@@ -98,16 +104,23 @@ FileInfo::FileInfo(const std::string_view fileuri) : File(fileuri) {
 
       break;
     case AVMEDIA_TYPE_VIDEO:
-      if (name == "av1")
+      switch (codecParams->codec_id) {
+      case AV_CODEC_ID_AV1:
         _videoCodec = VCodec::Av1;
-      else if (name == "h264")
+        break;
+      case AV_CODEC_ID_H264:
         _videoCodec = VCodec::H264;
-      else if (name == "hevc")
+        break;
+      case AV_CODEC_ID_H265:
         _videoCodec = VCodec::Hevc;
-      else if (name == "mpeg4")
+        break;
+      case AV_CODEC_ID_MPEG4:
         _videoCodec = VCodec::Mpeg4;
-      else
+        break;
+      default:
         _audioCodec = ACodec::Other;
+        break;
+      }
       break;
     case AVMEDIA_TYPE_SUBTITLE:
       dictEntry = av_dict_get(meta, "language", nullptr, 0);

@@ -43,13 +43,17 @@ File::File(std::string_view fileuri)
       _container(Container::Other), _formatCtxt{nullptr,
                                                 [](AVFormatContext* ctxt) {
                                                   if (ctxt != nullptr) {
+                                                    Logger()->debug(
+                                                        "free AVFormatContext");
                                                     avformat_close_input(&ctxt);
                                                     avformat_free_context(ctxt);
                                                   }
                                                 }},
       _codecCtxt{nullptr, [](AVCodecContext* ctxt) {
-                   if (ctxt != nullptr)
+                   if (ctxt != nullptr) {
+                     Logger()->debug("free AVCodecContext");
                      avcodec_free_context(&ctxt);
+                   }
                  }} {}
 
 File::VCodec File::getVideoCodec() const { return _videoCodec; }

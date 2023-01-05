@@ -28,6 +28,7 @@ extern "C" {
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
 #include <libavutil/error.h>
+#include <libavutil/mathematics.h>
 }
 
 #include "media/logger.hpp"
@@ -38,7 +39,6 @@ namespace Media {
 
 MkvMux::MkvMux(const FileInfo& input) : File(""), _input(input) {
   // Open file
-  Logger()->debug("Transmuxer MKV of {}", _input.getPath().string());
   _videoCodec = _input.getVideoCodec();
   _audioCodec = _input.getAudioCodec();
   _languages = _input.getLanguages();
@@ -48,16 +48,177 @@ MkvMux::MkvMux(const FileInfo& input) : File(""), _input(input) {
 
 void MkvMux::transmux(std::string_view output) {
   _path = output;
+  _path.replace_extension("mkv");
+  Logger()->info("Transmuxing MKV {} to {}", _input.getPath().string(),
+                 _path.string());
+  int ret = 0;
   if (std::filesystem::exists(_path)) {
     Logger()->error("Output file {} already exists.", _path.string());
     return;
   }
-  AVFormatContext* fc = nullptr;
-  if (avformat_open_input(&fc, _path.c_str(), NULL, NULL) != 0) {
-    Logger()->error("Unable to open output file {}", _path.string());
+  AVFormatContext* output_fc = nullptr;
+  avformat_alloc_output_context2(&output_fc, nullptr, "matroska",
+                                 _path.c_str());
+  if (!output_fc) {
+    Logger()->error("Unable to create output context for file {}",
+                    _path.string());
     return;
   }
-  _formatCtxt.reset(fc);
+  _formatCtxt.reset(output_fc);
+
+  AVFormatContext* input_fc = nullptr;
+  input_fc = _input._formatCtxt.get();
+
+  auto nbStreams = input_fc->nb_streams;
+
+  Logger()->debug("Allocate streams");
+  for (unsigned int is = 0; is < nbStreams; ++is) {
+    AVStream* outStream;
+    AVStream* inStream = input_fc->streams[is];
+
+    outStream = avformat_new_stream(output_fc, nullptr);
+    if (!outStream) {
+      Logger()->error("Allocation of stream {} failed.", is);
+      return;
+    }
+
+    AVCodecParameters* params = outStream->codecpar;
+    auto codecTag = params->codec_tag;
+    /*
+    AVCodecContext* codecCtx = avcodec_alloc_context3(nullptr);
+    if (!codecCtx) {
+      Logger()->error("Unable to allocate codec context for stream {}", is);
+      return;
+    }
+    ret = avcodec_parameters_to_context(codecCtx, inStream->codecpar);
+    if (ret < 0) {
+      Logger()->error(
+          "Unable to copy codec parameters to context for stream {}.", is);
+      return;
+    }
+    ret = avcodec_parameters_from_context(params, codecCtx);
+    if (ret < 0) {
+      Logger()->error(
+          "Unable to copy codec parameters from context for stream {}.", is);
+      return;
+    }
+    avcodec_free_context(&codecCtx);
+    */
+
+    ret = avcodec_parameters_copy(outStream->codecpar, inStream->codecpar);
+    if (ret < 0) {
+      Logger()->error("Unable to copy codec parametersfor stream {}.", is);
+      return;
+    }
+    if (!codecTag) {
+      unsigned int codecTagTmp;
+      if (!output_fc->oformat->codec_tag ||
+          av_codec_get_id(output_fc->oformat->codec_tag, params->codec_tag) ==
+              params->codec_id ||
+          !av_codec_get_tag2(output_fc->oformat->codec_tag, params->codec_id,
+                             &codecTagTmp))
+        codecTag = params->codec_tag;
+    }
+    params->codec_tag = codecTag;
+    outStream->avg_frame_rate = inStream->avg_frame_rate;
+    ret = avformat_transfer_internal_stream_timing_info(
+        output_fc->oformat, outStream, inStream,
+        AVTimebaseSource::AVFMT_TBCF_AUTO);
+    if (ret < 0) {
+      Logger()->error("Unable to transfer timing info for stream {}.", is);
+      return;
+    }
+
+    if (outStream->time_base.num <= 0 || outStream->time_base.den <= 0) {
+      Logger()->debug("Setting time base info for stream {}.", is);
+      outStream->time_base =
+          av_add_q(av_stream_get_codec_timebase(outStream), {0, 1});
+    }
+    if (outStream->duration <= 0 && inStream->duration > 0) {
+      Logger()->debug("Setting duration info for stream {}.", is);
+      outStream->duration = av_rescale_q(
+          inStream->duration, inStream->time_base, outStream->time_base);
+    }
+
+    if (inStream->nb_side_data) {
+      Logger()->debug("Copy side data for stream {}.", is);
+      for (int i = 0; i < inStream->nb_side_data; i++) {
+        Logger()->trace("side data {}.", i);
+        const AVPacketSideData* sdSrc = &inStream->side_data[i];
+        uint8_t* dstData;
+
+        dstData = av_stream_new_side_data(outStream, sdSrc->type, sdSrc->size);
+        if (!dstData) {
+          Logger()->error("Can not allocate side data for stream {}.", is);
+          return;
+        }
+        std::copy_n(sdSrc->data, sdSrc->size, dstData);
+      }
+    }
+
+    if (params->codec_type == AVMEDIA_TYPE_AUDIO) {
+      if ((params->block_align == 1 || params->block_align == 1152 ||
+           params->block_align == 576) &&
+          params->codec_id == AV_CODEC_ID_MP3)
+        params->block_align = 0;
+      if (params->codec_id == AV_CODEC_ID_AC3)
+        params->block_align = 0;
+    }
+  }
+
+  av_dump_format(_input._formatCtxt.get(), 0, _input.getPath().c_str(), 0);
+  av_dump_format(output_fc, 0, _path.c_str(), 1);
+
+  Logger()->debug("Open output file");
+  if (!(output_fc->oformat->flags & AVFMT_NOFILE)) {
+    ret = avio_open(&output_fc->pb, _path.c_str(), AVIO_FLAG_WRITE);
+    if (ret < 0) {
+      Logger()->error("Could not open output file {}", _path.string());
+      return;
+    }
+  } else {
+    Logger()->critical("Context does not have a file output", _path.string());
+    return;
+  }
+
+  Logger()->debug("Write header");
+  ret = avformat_write_header(output_fc, nullptr);
+  if (ret < 0) {
+    Logger()->critical("Could not write header to file {}", _path.string());
+    return;
+  }
+
+  AVPacket* packet = av_packet_alloc();
+  Logger()->debug("Copy streams");
+  while (1) {
+    AVStream *inStream, *outStream;
+    ret = av_read_frame(input_fc, packet);
+    if (ret < 0) {
+      break;
+    }
+    inStream = input_fc->streams[packet->stream_index];
+    outStream = output_fc->streams[packet->stream_index];
+    /* copy packet */
+    packet->pts =
+        av_rescale_q_rnd(packet->pts, inStream->time_base, outStream->time_base,
+                         AV_ROUND_NEAR_INF /*| AV_ROUND_PASS_MINMAX*/);
+    packet->dts =
+        av_rescale_q_rnd(packet->dts, inStream->time_base, outStream->time_base,
+                         AV_ROUND_NEAR_INF /*| AV_ROUND_PASS_MINMAX*/);
+    packet->duration = av_rescale_q(packet->duration, inStream->time_base,
+                                    outStream->time_base);
+    packet->pos = -1;
+
+    ret = av_interleaved_write_frame(output_fc, packet);
+    if (ret < 0) {
+      Logger()->error("Error writting packet");
+      break;
+    }
+    av_packet_unref(packet);
+  }
+
+  Logger()->debug("Write trailer");
+  av_write_trailer(output_fc);
 }
 
 } // namespace Media

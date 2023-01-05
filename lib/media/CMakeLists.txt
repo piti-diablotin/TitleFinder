@@ -12,6 +12,7 @@ add_library(
   file.cpp
   fileinfo.cpp
   logger.cpp
+  mkvmux.cpp
   )
 
 add_library(titlefinder::media ALIAS media)

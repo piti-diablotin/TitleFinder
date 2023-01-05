@@ -81,6 +81,8 @@ protected:
       _formatCtxt;
   std::unique_ptr<AVCodecContext, std::function<void(AVCodecContext*)>>
       _codecCtxt;
+
+  friend class MkvMux;
 };
 
 } // namespace Media

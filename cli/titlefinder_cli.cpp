@@ -6,11 +6,14 @@
 #include "api/tv.hpp"
 #include "api/tvseasons.hpp"
 #include "media/fileinfo.hpp"
+#include "media/mkvmux.hpp"
 #include "parser.hpp"
 
+#include <fmt/format.h>
 #include <iostream>
 #include <memory>
 #include <sstream>
+#include <string>
 
 #define CAST_REPONSE(rep__, type__, dest__)                                    \
   if (rep__->getCode() != 200) {                                               \
@@ -33,7 +36,8 @@ int main(int argc, char** argv) {
   parser.setOption("show", 's', "Breaking Bad", "TV Show (quoted)");
   parser.setOption("info", 'i', "Print additional information");
   parser.setOption("genre", 'g', "Print additional information");
-  parser.setOption("file", 'f', "", "File to analyse");
+  parser.setOption("file", 'f', "", "File to read");
+  parser.setOption("remux", 'r', "output.mkv", "Output file");
   parser.parse();
 
   if (parser.isSetOption("help")) {
@@ -143,6 +147,11 @@ int main(int argc, char** argv) {
 
   if (parser.isSetOption("file")) {
     TitleFinder::Media::FileInfo file(parser.getOption<std::string>("file"));
+
+    if (parser.isSetOption("remux")) {
+      TitleFinder::Media::MkvMux muxer(file);
+      muxer.transmux(parser.getOption<std::string>("remux"));
+    }
   }
 
   return 0;
