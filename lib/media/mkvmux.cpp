@@ -69,6 +69,15 @@ void MkvMux::transmux(std::string_view output) {
   AVFormatContext* input_fc = nullptr;
   input_fc = _input._formatCtxt.get();
 
+  if (input_fc->metadata) {
+    Logger()->debug("Copy metadata from file {}", _input.getPath().string());
+    ret = av_dict_copy(&output_fc->metadata, input_fc->metadata, 0);
+    if (ret < 0) {
+      Logger()->warn("Failed to copy metadata from file {}",
+                     _input.getPath().string());
+    }
+  }
+
   auto nbStreams = input_fc->nb_streams;
 
   Logger()->debug("Allocate streams");
@@ -140,6 +149,14 @@ void MkvMux::transmux(std::string_view output) {
           inStream->duration, inStream->time_base, outStream->time_base);
     }
 
+    if (inStream->metadata) {
+      Logger()->debug("Copy metadata for stream {}.", is);
+      ret = av_dict_copy(&outStream->metadata, inStream->metadata, 0);
+      if (ret < 0) {
+        Logger()->warn("Error copying metadata for stream {}.", is);
+      }
+    }
+
     if (inStream->nb_side_data) {
       Logger()->debug("Copy side data for stream {}.", is);
       for (int i = 0; i < inStream->nb_side_data; i++) {
@@ -149,10 +166,10 @@ void MkvMux::transmux(std::string_view output) {
 
         dstData = av_stream_new_side_data(outStream, sdSrc->type, sdSrc->size);
         if (!dstData) {
-          Logger()->error("Can not allocate side data for stream {}.", is);
-          return;
+          Logger()->warn("Can not allocate side data for stream {}.", is);
+        } else {
+          std::copy_n(sdSrc->data, sdSrc->size, dstData);
         }
-        std::copy_n(sdSrc->data, sdSrc->size, dstData);
       }
     }
 

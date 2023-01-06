@@ -33,8 +33,6 @@
 extern "C" {
 struct AVFormatContext;
 struct AVCodecContext;
-struct AVCodecParameters;
-struct AVCodec;
 }
 
 namespace TitleFinder {
