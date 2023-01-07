@@ -1,0 +1,6 @@
+---
+BasedOnStyle: LLVM
+IndentPPDirectives: AfterHash
+PointerAlignment: Left
+QualifierAlignment: Left
+SortIncludes: CaseInsensitive
