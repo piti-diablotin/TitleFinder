@@ -30,6 +30,8 @@
 #include <string_view>
 #include <vector>
 
+#include "media/tags.hpp"
+
 extern "C" {
 struct AVFormatContext;
 struct AVCodecContext;
@@ -62,6 +64,10 @@ public:
 
   virtual std::filesystem::path getPath() const;
 
+  virtual const std::string_view getTag(int id) const;
+
+  virtual void dumpInfo() const;
+
 protected:
   /**
    * Empty constructor
@@ -79,6 +85,8 @@ protected:
       _formatCtxt;
   std::unique_ptr<AVCodecContext, std::function<void(AVCodecContext*)>>
       _codecCtxt;
+
+  Tag::TagDict _tags;
 
   friend class MkvMux;
 };

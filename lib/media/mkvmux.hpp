@@ -45,6 +45,8 @@ public:
 
   void transmux(std::string_view output);
 
+  void setTag(int id, std::string value);
+
 private:
   const FileInfo& _input;
 };

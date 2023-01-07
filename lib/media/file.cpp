@@ -44,17 +44,19 @@ File::File(std::string_view fileuri)
                                                 [](AVFormatContext* ctxt) {
                                                   if (ctxt != nullptr) {
                                                     Logger()->debug(
-                                                        "free AVFormatContext");
+                                                        "Free AVFormatContext");
                                                     avformat_close_input(&ctxt);
                                                     avformat_free_context(ctxt);
                                                   }
                                                 }},
-      _codecCtxt{nullptr, [](AVCodecContext* ctxt) {
+      _codecCtxt{nullptr,
+                 [](AVCodecContext* ctxt) {
                    if (ctxt != nullptr) {
-                     Logger()->debug("free AVCodecContext");
+                     Logger()->debug("Free AVCodecContext");
                      avcodec_free_context(&ctxt);
                    }
-                 }} {}
+                 }},
+      _tags() {}
 
 File::VCodec File::getVideoCodec() const { return _videoCodec; }
 
@@ -65,6 +67,34 @@ const std::vector<File::Lang>& File::getLanguages() const { return _languages; }
 const std::vector<File::Lang>& File::getSubtitles() const { return _subtitles; }
 
 std::filesystem::path File::getPath() const { return _path; }
+
+const std::string_view File::getTag(const int id) const { return _tags.at(id); }
+
+void File::dumpInfo() const {
+  if (!_formatCtxt) {
+    Logger()->warn("Format context not allocated for {}.", _path.string());
+    return;
+  }
+  Logger()->info("{}: {}", _path.string(),
+                 _formatCtxt->iformat ? _formatCtxt->iformat->name
+                                      : _formatCtxt->oformat->name);
+  if (!_tags.empty()) {
+    Logger()->info("  Metadata:");
+    for (auto& meta : _tags) {
+      Logger()->info("    {: <12s}: {}", Tag::tags[meta.first], meta.second);
+    }
+  }
+  if (!_languages.empty()) {
+    Logger()->info("  Audio:");
+    for (auto& l : _languages)
+      Logger()->info("    {}", l);
+  }
+  if (!_subtitles.empty()) {
+    Logger()->info("  Subtitles:");
+    for (auto& s : _subtitles)
+      Logger()->info("    {}", s);
+  }
+}
 
 } // namespace Media
 

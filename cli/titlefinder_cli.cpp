@@ -38,6 +38,10 @@ int main(int argc, char** argv) {
   parser.setOption("genre", 'g', "Print additional information");
   parser.setOption("file", 'f', "", "File to read");
   parser.setOption("remux", 'r', "output.mkv", "Output file");
+  parser.setOption("title", 't', "",
+                   "Title to set in the mkv file if -r is used");
+  parser.setOption("year", 'y', "",
+                   "Year to set in the mkv file if -r is used");
   parser.parse();
 
   if (parser.isSetOption("help")) {
@@ -147,10 +151,17 @@ int main(int argc, char** argv) {
 
   if (parser.isSetOption("file")) {
     TitleFinder::Media::FileInfo file(parser.getOption<std::string>("file"));
+    file.dumpInfo();
+    using namespace TitleFinder::Media::Tag;
 
     if (parser.isSetOption("remux")) {
       TitleFinder::Media::MkvMux muxer(file);
+      if (parser.isSetOption("year"))
+        muxer.setTag("year"_tagid, parser.getOption<std::string>("year"));
+      if (parser.isSetOption("title"))
+        muxer.setTag("title"_tagid, parser.getOption<std::string>("title"));
       muxer.transmux(parser.getOption<std::string>("remux"));
+      muxer.dumpInfo();
     }
   }
 

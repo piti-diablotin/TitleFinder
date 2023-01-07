@@ -32,6 +32,7 @@ extern "C" {
 }
 
 #include "media/logger.hpp"
+#include "media/tags.hpp"
 
 namespace TitleFinder {
 
@@ -48,7 +49,7 @@ FileInfo::FileInfo(const std::string_view fileuri) : File(fileuri) {
   if (avformat_find_stream_info(fc, NULL) != 0) {
     Logger()->error("Unable to find stream info for file {}", _path.string());
   }
-  Logger()->debug("Format name is {} ({})", fc->iformat->name, _path.string());
+  Logger()->debug("{}: {}", _path.string(), fc->iformat->name);
   std::string_view demuxer{fc->iformat->name};
   if (demuxer.find("mastroska") != std::string_view::npos) {
     _container = Container::Mkv;
@@ -60,10 +61,14 @@ FileInfo::FileInfo(const std::string_view fileuri) : File(fileuri) {
     _container = Container::Other;
   }
 
-  AVDictionaryEntry* mediaTitle =
-      av_dict_get(fc->metadata, "title", nullptr, 0);
-  if (mediaTitle != nullptr) {
-    Logger()->debug("Title: {}", mediaTitle->value);
+  AVDictionaryEntry* metainfo = nullptr;
+  while ((metainfo =
+              av_dict_get(fc->metadata, "", metainfo, AV_DICT_IGNORE_SUFFIX))) {
+    const int id = Tag::operator""_tagid(metainfo->key, strlen(metainfo->key));
+    if (id >= 0) {
+      _tags[id] = metainfo->value;
+      Logger()->debug("  {: <12s}: {}", metainfo->key, metainfo->value);
+    }
   }
 
   for (unsigned i = 0; i < fc->nb_streams; ++i) {
@@ -73,11 +78,11 @@ FileInfo::FileInfo(const std::string_view fileuri) : File(fileuri) {
     std::string_view name;
     if (codecDesc != nullptr)
       name = codecDesc->name;
-    Logger()->debug("Stream [{}] is {}", i, name);
+    Logger()->debug("- Stream [{}] :  {}", i, name);
     AVDictionary* meta = fc->streams[i]->metadata;
     AVDictionaryEntry* title = av_dict_get(meta, "title", nullptr, 0);
     if (title != nullptr) {
-      Logger()->debug("  title: {}", title->value);
+      Logger()->debug("    title: {}", title->value);
     }
     AVDictionaryEntry* dictEntry = nullptr;
     switch (codecParams->codec_type) {
@@ -98,7 +103,7 @@ FileInfo::FileInfo(const std::string_view fileuri) : File(fileuri) {
       }
       dictEntry = av_dict_get(meta, "language", nullptr, 0);
       if (dictEntry) {
-        Logger()->debug("  language:{}", dictEntry->value);
+        Logger()->debug("    language : {}", dictEntry->value);
         _languages.push_back(std::string(dictEntry->value));
       }
 
@@ -125,7 +130,7 @@ FileInfo::FileInfo(const std::string_view fileuri) : File(fileuri) {
     case AVMEDIA_TYPE_SUBTITLE:
       dictEntry = av_dict_get(meta, "language", nullptr, 0);
       if (dictEntry) {
-        Logger()->debug("  subtitles:{}", dictEntry->value);
+        Logger()->debug("  subtitles : {}", dictEntry->value);
         _subtitles.push_back(std::string(dictEntry->value));
       }
       break;

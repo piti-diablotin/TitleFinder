@@ -22,6 +22,7 @@
  */
 
 #include "media/mkvmux.hpp"
+#include "media/tags.hpp"
 #include <filesystem>
 
 extern "C" {
@@ -44,6 +45,7 @@ MkvMux::MkvMux(const FileInfo& input) : File(""), _input(input) {
   _languages = _input.getLanguages();
   _subtitles = _input.getSubtitles();
   _container = Container::Mkv;
+  _tags = _input._tags;
 }
 
 void MkvMux::transmux(std::string_view output) {
@@ -78,6 +80,17 @@ void MkvMux::transmux(std::string_view output) {
     }
   }
 
+  if (!_tags.empty()) {
+    Logger()->debug("Setting new tag values");
+    for (auto& t : _tags) {
+      ret = av_dict_set(&output_fc->metadata, Tag::tags[t.first],
+                        t.second.c_str(), 0);
+      if (ret < 0)
+        Logger()->warn("Can not set tag {} to {}", Tag::tags[t.first],
+                       t.second);
+    }
+  }
+
   auto nbStreams = input_fc->nb_streams;
 
   Logger()->debug("Allocate streams");
@@ -93,26 +106,6 @@ void MkvMux::transmux(std::string_view output) {
 
     AVCodecParameters* params = outStream->codecpar;
     auto codecTag = params->codec_tag;
-    /*
-    AVCodecContext* codecCtx = avcodec_alloc_context3(nullptr);
-    if (!codecCtx) {
-      Logger()->error("Unable to allocate codec context for stream {}", is);
-      return;
-    }
-    ret = avcodec_parameters_to_context(codecCtx, inStream->codecpar);
-    if (ret < 0) {
-      Logger()->error(
-          "Unable to copy codec parameters to context for stream {}.", is);
-      return;
-    }
-    ret = avcodec_parameters_from_context(params, codecCtx);
-    if (ret < 0) {
-      Logger()->error(
-          "Unable to copy codec parameters from context for stream {}.", is);
-      return;
-    }
-    avcodec_free_context(&codecCtx);
-    */
 
     ret = avcodec_parameters_copy(outStream->codecpar, inStream->codecpar);
     if (ret < 0) {
@@ -183,7 +176,7 @@ void MkvMux::transmux(std::string_view output) {
     }
   }
 
-  av_dump_format(_input._formatCtxt.get(), 0, _input.getPath().c_str(), 0);
+  // av_dump_format(_input._formatCtxt.get(), 0, _input.getPath().c_str(), 0);
   av_dump_format(output_fc, 0, _path.c_str(), 1);
 
   Logger()->debug("Open output file");
@@ -236,6 +229,13 @@ void MkvMux::transmux(std::string_view output) {
 
   Logger()->debug("Write trailer");
   av_write_trailer(output_fc);
+}
+
+void MkvMux::setTag(const int id, std::string value) {
+  if (id < Tag::numberOfTags)
+    _tags.insert_or_assign(id, std::move(value));
+  else
+    Logger()->warn("Tag id {} does not exist", id);
 }
 
 } // namespace Media
