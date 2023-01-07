@@ -177,7 +177,7 @@ void MkvMux::transmux(std::string_view output) {
   }
 
   // av_dump_format(_input._formatCtxt.get(), 0, _input.getPath().c_str(), 0);
-  av_dump_format(output_fc, 0, _path.c_str(), 1);
+  // av_dump_format(output_fc, 0, _path.c_str(), 1);
 
   Logger()->debug("Open output file");
   if (!(output_fc->oformat->flags & AVFMT_NOFILE)) {
