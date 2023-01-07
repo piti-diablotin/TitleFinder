@@ -151,6 +151,8 @@ int main(int argc, char** argv) {
 
   if (parser.isSetOption("file")) {
     TitleFinder::Media::FileInfo file(parser.getOption<std::string>("file"));
+    if (!file.isOpen())
+      return 1;
     file.dumpInfo();
     using namespace TitleFinder::Media::Tag;
 
@@ -161,6 +163,8 @@ int main(int argc, char** argv) {
       if (parser.isSetOption("title"))
         muxer.setTag("title"_tagid, parser.getOption<std::string>("title"));
       muxer.transmux(parser.getOption<std::string>("remux"));
+      if (!muxer.isOpen())
+        return 1;
       muxer.dumpInfo();
     }
   }

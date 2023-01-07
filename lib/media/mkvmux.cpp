@@ -53,11 +53,18 @@ void MkvMux::transmux(std::string_view output) {
   _path.replace_extension("mkv");
   Logger()->info("Transmuxing MKV {} to {}", _input.getPath().string(),
                  _path.string());
+
+  if (!_input.isOpen()) {
+    Logger()->error("Input file {} is not opened.", _input._path.string());
+    return;
+  }
+
   int ret = 0;
   if (std::filesystem::exists(_path)) {
     Logger()->error("Output file {} already exists.", _path.string());
     return;
   }
+
   AVFormatContext* output_fc = nullptr;
   avformat_alloc_output_context2(&output_fc, nullptr, "matroska",
                                  _path.c_str());

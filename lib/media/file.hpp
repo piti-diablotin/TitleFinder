@@ -68,6 +68,8 @@ public:
 
   virtual void dumpInfo() const;
 
+  inline virtual bool isOpen() const { return _formatCtxt != nullptr; }
+
 protected:
   /**
    * Empty constructor
