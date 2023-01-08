@@ -72,7 +72,7 @@ std::shared_ptr<spdlog::logger> buildLogger(const std::string& name) {
   std::shared_ptr<spdlog::logger> logger{log};
   spdlog::register_logger(logger);
   spdlog::cfg::load_env_levels();
-  log->info("Logger level to {}", log->level());
+  log->debug("Logger level to {}", log->level());
   return logger;
 }
 } // namespace

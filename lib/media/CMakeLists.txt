@@ -20,7 +20,7 @@ add_library(titlefinder::media ALIAS media)
 target_include_directories(
   media
   PUBLIC
-  ${PROJECT_SOURCE_DIR}
+  ${PROJECT_SOURCE_DIR}/lib
   )
 
 target_link_libraries(

@@ -82,7 +82,7 @@ FileInfo::FileInfo(const std::string_view fileuri) : File(fileuri) {
     AVDictionary* meta = fc->streams[i]->metadata;
     AVDictionaryEntry* title = av_dict_get(meta, "title", nullptr, 0);
     if (title != nullptr) {
-      Logger()->debug("    title: {}", title->value);
+      Logger()->debug("    {: <12s}: {}", "title", title->value);
     }
     AVDictionaryEntry* dictEntry = nullptr;
     switch (codecParams->codec_type) {
@@ -103,7 +103,7 @@ FileInfo::FileInfo(const std::string_view fileuri) : File(fileuri) {
       }
       dictEntry = av_dict_get(meta, "language", nullptr, 0);
       if (dictEntry) {
-        Logger()->debug("    language : {}", dictEntry->value);
+        Logger()->debug("    {: <12s}: {}", "language", dictEntry->value);
         _languages.push_back(std::string(dictEntry->value));
       }
 
@@ -130,7 +130,7 @@ FileInfo::FileInfo(const std::string_view fileuri) : File(fileuri) {
     case AVMEDIA_TYPE_SUBTITLE:
       dictEntry = av_dict_get(meta, "language", nullptr, 0);
       if (dictEntry) {
-        Logger()->debug("  subtitles : {}", dictEntry->value);
+        Logger()->debug("    {: <12s}: {}", "language", dictEntry->value);
         _subtitles.push_back(std::string(dictEntry->value));
       }
       break;

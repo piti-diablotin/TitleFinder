@@ -7,5 +7,6 @@ target_link_libraries(titlefinder_cli
   PRIVATE
   titlefinder::api
   titlefinder::media
+  titlefinder::explorer
   fmt::fmt
   )

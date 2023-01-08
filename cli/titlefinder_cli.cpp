@@ -5,6 +5,7 @@
 #include "api/tmdb.hpp"
 #include "api/tv.hpp"
 #include "api/tvseasons.hpp"
+#include "explorer/discriminator.hpp"
 #include "media/fileinfo.hpp"
 #include "media/mkvmux.hpp"
 #include "parser.hpp"
@@ -28,6 +29,8 @@
     return -1;                                                                 \
   }
 
+using namespace TitleFinder;
+
 int main(int argc, char** argv) {
   Parser parser{argc, argv};
   parser.setOption("help", 'h', "Print help message");
@@ -49,27 +52,26 @@ int main(int argc, char** argv) {
     return 0;
   }
 
-  std::shared_ptr<TitleFinder::Api::Tmdb> tmdb(nullptr);
+  std::shared_ptr<Api::Tmdb> tmdb(nullptr);
   if (parser.isSetOption("movie") || parser.isSetOption("show")) {
-    tmdb = TitleFinder::Api::Tmdb::create(
-        parser.getOption<std::string>("api_key"));
+    tmdb = Api::Tmdb::create(parser.getOption<std::string>("api_key"));
 
-    TitleFinder::Api::Authentication auth(tmdb);
-    TitleFinder::Api::Genres genres(tmdb);
+    Api::Authentication auth(tmdb);
+    Api::Genres genres(tmdb);
 
     auto rep = auth.createRequestToken();
-    CAST_REPONSE(rep, TitleFinder::Api::Authentication::RequestToken, token);
+    CAST_REPONSE(rep, Api::Authentication::RequestToken, token);
 
-    TitleFinder::Api::Search search(tmdb);
+    Api::Search search(tmdb);
     if (parser.isSetOption("movie")) {
       rep = search.searchMovies({}, parser.getOption<std::string>("movie"), {},
                                 {}, {}, {}, {});
 
-      CAST_REPONSE(rep, TitleFinder::Api::Search::SearchMovies, s);
+      CAST_REPONSE(rep, Api::Search::SearchMovies, s);
 
       if (parser.isSetOption("genre")) {
         auto gr = genres.getMovieList({});
-        CAST_REPONSE(gr, TitleFinder::Api::Genres::GenresList, mgenre);
+        CAST_REPONSE(gr, Api::Genres::GenresList, mgenre);
 
         for (auto& f : s->results) {
           std::string fg;
@@ -97,7 +99,7 @@ int main(int argc, char** argv) {
       rep = search.searchTvShows({}, {}, parser.getOption<std::string>("show"),
                                  {}, {});
 
-      CAST_REPONSE(rep, TitleFinder::Api::Search::SearchTvShows, s);
+      CAST_REPONSE(rep, Api::Search::SearchTvShows, s);
 
       if (s->results.size() > 0) {
         auto& first = s->results[0];
@@ -105,9 +107,9 @@ int main(int argc, char** argv) {
                   << ") " << first.vote_average * 10 << "%" << std::endl;
 
         if (!first.genre_ids.empty() && parser.isSetOption("genre")) {
-          TitleFinder::Api::Genres genres(tmdb);
+          Api::Genres genres(tmdb);
           auto gr = genres.getTvList({});
-          CAST_REPONSE(gr, TitleFinder::Api::Genres::GenresList, tvgenre);
+          CAST_REPONSE(gr, Api::Genres::GenresList, tvgenre);
           for (auto id : first.genre_ids) {
             std::cout << tvgenre->genres[id] << ", ";
           }
@@ -115,18 +117,17 @@ int main(int argc, char** argv) {
         }
 
         if (parser.isSetOption("info")) {
-          TitleFinder::Api::Tv tv(tmdb);
+          Api::Tv tv(tmdb);
           auto rep2 = tv.getDetails(first.id, {});
-          CAST_REPONSE(rep2, TitleFinder::Api::Tv::Details, tvshow);
+          CAST_REPONSE(rep2, Api::Tv::Details, tvshow);
           std::cout << tvshow->number_of_seasons << " seasons" << std::endl;
 
-          TitleFinder::Api::TvSeasons tvseasons(tmdb);
+          Api::TvSeasons tvseasons(tmdb);
           for (int si = 1; si <= tvshow->number_of_seasons; ++si) {
             auto details = tvseasons.getDetails(first.id, si, {});
             if (details->getCode() == 200) {
               auto* season =
-                  dynamic_cast<TitleFinder::Api::TvSeasons::Details*>(
-                      details.get());
+                  dynamic_cast<Api::TvSeasons::Details*>(details.get());
               int SN = season->season_number;
 
               size_t len = 0;
@@ -150,14 +151,31 @@ int main(int argc, char** argv) {
   }
 
   if (parser.isSetOption("file")) {
-    TitleFinder::Media::FileInfo file(parser.getOption<std::string>("file"));
+    Media::FileInfo file(parser.getOption<std::string>("file"));
+    Explorer::Discriminator discri;
+    auto t = discri.getType(file.getPath());
+    switch (t) {
+    case Type::Movie:
+      std::cout << fmt::format("Discriminator: {} ({})", discri.getTitle(),
+                               discri.getYear())
+                << std::endl;
+      break;
+    case Type::Show:
+      std::cout << fmt::format("Discriminator: {} Season {} Episode {}",
+                               discri.getTitle(), discri.getSeason(),
+                               discri.getEpisode())
+                << std::endl;
+      break;
+    default:
+      std::cout << "Discriminator failed" << std::endl;
+    }
     if (!file.isOpen())
       return 1;
     file.dumpInfo();
-    using namespace TitleFinder::Media::Tag;
+    using namespace Media::Tag;
 
     if (parser.isSetOption("remux")) {
-      TitleFinder::Media::MkvMux muxer(file);
+      Media::MkvMux muxer(file);
       if (parser.isSetOption("year"))
         muxer.setTag("year"_tagid, parser.getOption<std::string>("year"));
       if (parser.isSetOption("title"))
