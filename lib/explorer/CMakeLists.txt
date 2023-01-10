@@ -3,6 +3,7 @@ add_library(
   explorer 
   discriminator.cpp
   logger.cpp
+  namefilter.cpp
   )
 
 add_library(titlefinder::explorer ALIAS explorer)

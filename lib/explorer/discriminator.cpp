@@ -53,10 +53,6 @@ Type Discriminator::getType(const std::filesystem::path& p) {
   _title.clear();
   _year = -1;
 
-  if (!std::filesystem::is_regular_file(p)) {
-    Logger()->debug("Path {} is not a regular file", p.string());
-    return Type::None;
-  }
   std::string copy = p.stem().string();
   std::smatch m;
   Type t = Type::None;

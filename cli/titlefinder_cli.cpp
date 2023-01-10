@@ -6,6 +6,7 @@
 #include "api/tv.hpp"
 #include "api/tvseasons.hpp"
 #include "explorer/discriminator.hpp"
+#include "explorer/namefilter.hpp"
 #include "media/fileinfo.hpp"
 #include "media/mkvmux.hpp"
 #include "parser.hpp"
@@ -45,6 +46,7 @@ int main(int argc, char** argv) {
                    "Title to set in the mkv file if -r is used");
   parser.setOption("year", 'y', "",
                    "Year to set in the mkv file if -r is used");
+  parser.setOption("blacklist", 'b', "", "Black list file");
   parser.parse();
 
   if (parser.isSetOption("help")) {
@@ -151,9 +153,16 @@ int main(int argc, char** argv) {
   }
 
   if (parser.isSetOption("file")) {
-    Media::FileInfo file(parser.getOption<std::string>("file"));
+    auto filename = parser.getOption<std::string>("file");
+    Media::FileInfo file(filename);
+
+    if (parser.isSetOption("blacklist")) {
+      Explorer::NameFilter filter(parser.getOption<std::string>("blacklist"));
+      filename = filter.filter(file.getPath().stem());
+    }
+
     Explorer::Discriminator discri;
-    auto t = discri.getType(file.getPath());
+    auto t = discri.getType(filename);
     switch (t) {
     case Type::Movie:
       std::cout << fmt::format("Discriminator: {} ({})", discri.getTitle(),
@@ -169,9 +178,37 @@ int main(int argc, char** argv) {
     default:
       std::cout << "Discriminator failed" << std::endl;
     }
+
+    if (parser.isSetOption("api_key")) {
+      tmdb = Api::Tmdb::create(parser.getOption<std::string>("api_key"));
+
+      Api::Authentication auth(tmdb);
+      Api::Genres genres(tmdb);
+
+      auto rep = auth.createRequestToken();
+      CAST_REPONSE(rep, Api::Authentication::RequestToken, token);
+
+      Api::Search search(tmdb);
+      if (t == Type::Movie) {
+        std::string title = discri.getTitle();
+        std::replace(title.begin(), title.end(), '.', ' ');
+        rep = search.searchMovies({}, title, {}, {}, {}, {}, {});
+        CAST_REPONSE(rep, Api::Search::SearchMovies, s);
+        for (auto& f : s->results) {
+          std::cout << fmt::format("|{}|{}|{:2.0f}%|", f.title,
+                                   f.release_date.substr(0, 4),
+                                   f.vote_average * 10)
+                    << std::endl;
+        }
+      } else if (t == Type::Show) {
+      }
+    }
+
     if (!file.isOpen())
       return 1;
+
     file.dumpInfo();
+
     using namespace Media::Tag;
 
     if (parser.isSetOption("remux")) {
