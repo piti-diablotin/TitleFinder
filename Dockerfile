@@ -16,7 +16,7 @@ RUN cmake -S . -B build -DCMAKE_BUILD_TYPE=Release && cmake --build build
 FROM ubuntu:latest as main
 
 ENV DEBIAN_FRONTEND=noninteractive
-RUN apt update && apt install libspdlog1 libcurl4 libfmt8 libavformat58 libavutil56 libavcodec58 -y
+RUN apt update && apt install libspdlog1 libcurl4 libfmt8 libavformat58 libavutil56 libavcodec58 -y && apt clean
 COPY --from=build /tmp/TitleFinder/build/cli/titlefinder_cli /usr/bin/
 
 ENTRYPOINT [ "/usr/bin/titlefinder_cli" ]

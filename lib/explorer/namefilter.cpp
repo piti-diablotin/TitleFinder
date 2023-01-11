@@ -70,7 +70,7 @@ NameFilter::NameFilter(std::string_view blacklist) {
                            std::regex_constants::match_any);
     std::string replacement = r.value("replacement", "");
     bool casesensitive = r["casesensitive"];
-    Logger()->debug("source: {: <20s}, replacement {: <20s}", source,
+    Logger()->trace("source: {: <20s}, replacement {: <20s}", source,
                     replacement);
     _regex[i++] = std::move(
         std::make_pair(std::regex(source, casesensitive ? std::regex::ECMAScript
@@ -83,7 +83,7 @@ std::string NameFilter::filter(const std::string& input) {
   std::string output(input);
   std::regex trim(R"(\.+)");
   for (const auto& r : _regex) {
-    Logger()->debug("Intermediate replacement: {}", output);
+    Logger()->trace("Intermediate replacement: {}", output);
     output = std::regex_replace(output, r.first, r.second);
   }
   output =

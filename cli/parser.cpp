@@ -2,6 +2,7 @@
 
 #include <getopt.h>
 
+#include <algorithm>
 #include <cstdlib>
 #include <fmt/format.h>
 #include <sstream>
@@ -11,6 +12,8 @@
 //
 Parser::Parser(int argc, char** argv)
     : _argc(argc), _argv(argv), _binary(argv[0]), _empty(-10), _options() {}
+
+void Parser::setBinaryName(std::string_view name) { _binary = name; }
 
 //
 void Parser::parse() {
@@ -52,6 +55,15 @@ void Parser::parse() {
         if (testOpt->_letter == c) { // We've found the option
           testOpt->_value = (testOpt->_hasArg == 1 ? optarg : "true");
           testOpt->_isSet = true;
+          if (!testOpt->_enum.empty()) {
+            if (std::find(testOpt->_enum.begin(), testOpt->_enum.end(),
+                          testOpt->_value) == testOpt->_enum.end()) {
+              throw std::out_of_range(fmt::format(
+                  "Found value {} for option {} but only {} are allowed",
+                  testOpt->_value, testOpt->_name,
+                  fmt::join(testOpt->_enum, "|")));
+            }
+          }
           break;
         }
       }
@@ -75,27 +87,36 @@ void Parser::parse() {
 //
 void Parser::setOption(std::string name, char letter, std::string description) {
   _options.push_back(
-      {false, std::move(name), letter, 0, "false", std::move(description)});
+      {false, std::move(name), letter, 0, "false", std::move(description), {}});
 }
 
 //
 void Parser::setOption(std::string name, std::string description) {
-  _options.push_back(
-      {false, std::move(name), --_empty, 0, "false", std::move(description)});
+  _options.push_back({false,
+                      std::move(name),
+                      --_empty,
+                      0,
+                      "false",
+                      std::move(description),
+                      {}});
 }
 
 //
 void Parser::setOption(std::string name, char letter, std::string defaultValue,
-                       std::string description) {
+                       std::string description,
+                       std::vector<std::string> choices) {
   _options.push_back({false, std::move(name), letter, 1,
-                      std::move(defaultValue), std::move(description)});
+                      std::move(defaultValue), std::move(description),
+                      std::move(choices)});
 }
 
 //
 void Parser::setOption(std::string name, std::string defaultValue,
-                       std::string description) {
+                       std::string description,
+                       std::vector<std::string> choices) {
   _options.push_back({false, std::move(name), --_empty, 1,
-                      std::move(defaultValue), std::move(description)});
+                      std::move(defaultValue), std::move(description),
+                      std::move(choices)});
 }
 
 /**
@@ -148,7 +169,7 @@ bool Parser::isSetOption(std::string_view option) {
 
 //
 std::ostream& operator<<(std::ostream& out, const Parser& parser) {
-  out << "Usage : " << parser._binary << " [-";
+  out << parser._binary << " [-";
 
   for (auto& opt : parser._options) {
     if (opt._hasArg == 0 && opt._letter > 0) {
@@ -166,7 +187,11 @@ std::ostream& operator<<(std::ostream& out, const Parser& parser) {
 
   for (auto& opt : parser._options) {
     if (opt._hasArg == 1) {
-      out << "[-" << static_cast<char>(opt._letter) << " argument] ";
+      if (opt._enum.empty())
+        out << "[-" << static_cast<char>(opt._letter) << " argument] ";
+      else
+        out << "[-" << static_cast<char>(opt._letter)
+            << fmt::format(" ({}) ]", fmt::join(opt._enum, "|"));
     }
   }
   out << "\n\nOptions are :\n";

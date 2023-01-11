@@ -25,12 +25,13 @@ private:
    * It is redundante with the struct option that will be used later.
    */
   struct Option {
-    bool _isSet;              ///< true if user defines this options.
-    std::string _name;        ///< Long name.
-    int _letter;              ///< Short name.
-    int _hasArg;              ///< Do we expect an arguement.
-    std::string _value;       ///< Value of the argument.
-    std::string _description; ///< Value of the argument.
+    bool _isSet;                    ///< true if user defines this options.
+    std::string _name;              ///< Long name.
+    int _letter;                    ///< Short name.
+    int _hasArg;                    ///< Do we expect an arguement.
+    std::string _value;             ///< Value of the argument.
+    std::string _description;       ///< Value of the argument.
+    std::vector<std::string> _enum; ///< allowed value
   };
 
   int _argc;           ///< Number of input arguments.
@@ -79,6 +80,11 @@ public:
   void parse();
 
   /**
+   * Set binary name
+   */
+  void setBinaryName(std::string_view name);
+
+  /**
    * Add an option to the list that can be read from command line
    * This option will have no argument.
    * It is a boolean.
@@ -106,7 +112,8 @@ public:
    * @param description Brief for the help
    */
   void setOption(std::string name, char letter, std::string defaultValue,
-                 std::string description);
+                 std::string description,
+                 std::vector<std::string> choices = {});
 
   /**
    * Add an option to the list that can be read from command line
@@ -116,7 +123,8 @@ public:
    * @param description Brief for the help
    */
   void setOption(std::string name, std::string defaultValue,
-                 std::string description);
+                 std::string description,
+                 std::vector<std::string> choices = {});
 
   /**
    * Get the option from command line.

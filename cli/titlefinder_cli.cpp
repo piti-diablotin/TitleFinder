@@ -192,7 +192,7 @@ int main(int argc, char** argv) {
       if (t == Type::Movie) {
         std::string title = discri.getTitle();
         std::replace(title.begin(), title.end(), '.', ' ');
-        rep = search.searchMovies({}, title, {}, {}, {}, {}, {});
+        rep = search.searchMovies("", title, {}, {}, {}, {}, {});
         CAST_REPONSE(rep, Api::Search::SearchMovies, s);
         for (auto& f : s->results) {
           std::cout << fmt::format("|{}|{}|{:2.0f}%|", f.title,
