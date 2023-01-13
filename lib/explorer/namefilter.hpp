@@ -23,6 +23,8 @@
 
 #pragma once
 
+#include <memory>
+#include <nlohmann/json.hpp>
 #include <regex>
 #include <string_view>
 #include <utility>
@@ -47,8 +49,14 @@ public:
 
   std::string filter(const std::string& input);
 
+  void add(const std::string& source, const std::string& replacement,
+           bool casesensitive);
+
+  void dump(std::string_view filename);
+
 private:
   std::vector<std::pair<std::regex, std::string>> _regex;
+  nlohmann::json _db;
 };
 
 } // namespace Explorer

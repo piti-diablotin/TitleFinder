@@ -25,6 +25,7 @@
 
 #include <filesystem>
 #include <fstream>
+#include <memory>
 #include <nlohmann/json.hpp>
 #include <regex>
 
@@ -40,31 +41,34 @@ namespace TitleFinder {
 
 namespace Explorer {
 
-NameFilter::NameFilter(std::string_view blacklist) {
+NameFilter::NameFilter(std::string_view blacklist) : _regex(), _db() {
   std::filesystem::path check(blacklist);
   if (!std::filesystem::exists(check)) {
     Logger()->error("Blacklist file {} does not seem to exist", blacklist);
   }
   std::ifstream file{check, std::ios::in};
-  json db;
+  if (!file.is_open()) {
+    Logger()->error("Blacklist file {} cannot be opened", blacklist);
+    return;
+  }
   try {
-    db = nlohmann::json::parse(file);
+    _db = nlohmann::json::parse(file);
   } catch (const std::exception& e) {
     Logger()->critical("json parsing failed with {}", e.what());
     return;
   }
-  if (!db.contains(kReplacements)) {
+  if (!_db.contains(kReplacements)) {
     Logger()->info("Blacklist file does not contain replacements");
     return;
   }
-  if (!db[kReplacements].is_array()) {
+  if (!_db[kReplacements].is_array()) {
     Logger()->error("Replacements is not an array");
     return;
   }
-  _regex.resize(db[kReplacements].size());
+  _regex.resize(_db[kReplacements].size());
   int i = 0;
   const std::regex protection(R"(([\\\^\$\.\|\?\*\+\(\)\[\]\{\}]))");
-  for (const auto& r : db[kReplacements]) {
+  for (const auto& r : _db[kReplacements]) {
     std::string source =
         std::regex_replace(r.value("source", ""), protection, "\\$1",
                            std::regex_constants::match_any);
@@ -89,6 +93,19 @@ std::string NameFilter::filter(const std::string& input) {
   output =
       std::regex_replace(output, trim, ".", std::regex_constants::match_any);
   return output;
+}
+
+void NameFilter::add(const std::string& source, const std::string& replacement,
+                     bool casesensitive) {
+
+  json item = {{"source", source},
+               {"replacement", replacement},
+               {"casesensitive", casesensitive}};
+
+  if (!_db.contains(kReplacements))
+    _db[kReplacements] = json::array();
+
+  _db[kReplacements].push_back(std::move(item));
 }
 
 } // namespace Explorer
