@@ -1,0 +1,8 @@
+include(CMakeFIndDependencyMacro)
+
+find_package(spdlog REQUIRED)
+find_package(fmt REQUIRED)
+find_package(CURL REQUIRED)
+find_package(nlohmann_json REQUIRED)
+include("${CMAKE_CURRENT_LIST_DIR}/titlefinderTargets.cmake")
+

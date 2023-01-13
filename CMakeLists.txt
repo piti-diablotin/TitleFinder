@@ -1,13 +1,19 @@
 cmake_minimum_required(VERSION 3.11)
 project(
   TitleFinder
-  VERSION 0.0
+  VERSION 0.1
   LANGUAGES CXX
   )
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS "9.1")
+  link_libraries(stdc++fs)
+endif()
+
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON CACHE BOOL "Export compile_commands.json" FORCE)
 
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
   include(CheckCXXCompilerFlag)
@@ -38,3 +44,26 @@ find_package(fmt REQUIRED)
 
 add_subdirectory(lib)
 add_subdirectory(cli)
+
+include(CMakePackageConfigHelpers)
+write_basic_package_version_file(
+  "${CMAKE_CURRENT_BINARY_DIR}/titlefinder/titlefinderConfigVersion.cmake"
+  VERSION ${CMAKE_PROJECT_VERSION}
+  COMPATIBILITY SameMajorVersion
+  )
+
+configure_file(titlefinderConfig.cmake.in
+  "${CMAKE_CURRENT_BINARY_DIR}/titlefinder/titlefinderConfig.cmake"
+  @ONLY
+  )
+
+install(EXPORT titlefinderTargets
+  NAMESPACE titlefinder::
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/titlefinder
+  )
+
+install(FILES
+  ${CMAKE_CURRENT_BINARY_DIR}/titlefinder/titlefinderConfigVersion.cmake
+  ${CMAKE_CURRENT_BINARY_DIR}/titlefinder/titlefinderConfig.cmake
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/titlefinder
+  )
