@@ -8,7 +8,7 @@
 #include "explorer/discriminator.hpp"
 #include "explorer/namefilter.hpp"
 #include "media/fileinfo.hpp"
-#include "media/mkvmux.hpp"
+#include "media/muxer.hpp"
 #include "parser.hpp"
 
 #include <fmt/format.h>
@@ -212,7 +212,7 @@ int main(int argc, char** argv) {
     using namespace Media::Tag;
 
     if (parser.isSetOption("remux")) {
-      Media::MkvMux muxer(file);
+      Media::Mp4Muxer muxer(file);
       if (parser.isSetOption("year"))
         muxer.setTag("year"_tagid, parser.getOption<std::string>("year"));
       if (parser.isSetOption("title"))

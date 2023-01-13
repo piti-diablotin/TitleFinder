@@ -33,7 +33,8 @@ namespace {
 constexpr const char* seasonDiscriminant_{R"([\.\-_][s]?(\d{1,2})$)"};
 constexpr const char* episodeDiscriminant_{
     R"([\.\-_][s]?(\d{1,2})[xe](\d{1,2}))"};
-constexpr const char* movieDiscriminant_{R"([\._\- ]?\(?(\d{4})\)?)"};
+constexpr const char* movieDiscriminant_{
+    R"([\._\- ]?\(?(\d{4})[^a-zA-Z0-9]\)?)"};
 
 } // namespace
 

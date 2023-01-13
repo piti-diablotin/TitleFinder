@@ -30,25 +30,48 @@ namespace TitleFinder {
 
 namespace Media {
 
-class MkvMux : public File {
+class Muxer : public File {
 
 public:
-  /**
-   * Empty constructor
-   */
-  explicit MkvMux(const FileInfo& input);
-
+  Muxer() = delete;
   /**
    * Destructor
    */
-  virtual ~MkvMux() override = default;
+  virtual ~Muxer() override = default;
 
   void transmux(std::string_view output);
 
   void setTag(int id, std::string value);
 
+protected:
+  /**
+   * Empty constructor
+   */
+  explicit Muxer(const FileInfo& input);
+
+  std::string_view _format;
+  std::string_view _extension;
+
 private:
   const FileInfo& _input;
+};
+
+class MkvMuxer : public Muxer {
+public:
+  explicit MkvMuxer(const FileInfo& input) : Muxer(input) {
+    _format = "matroska";
+    _extension = "mkv";
+  }
+  ~MkvMuxer() override = default;
+};
+
+class Mp4Muxer : public Muxer {
+public:
+  explicit Mp4Muxer(const FileInfo& input) : Muxer(input) {
+    _format = "mp4";
+    _extension = "mp4";
+  }
+  ~Mp4Muxer() override = default;
 };
 
 } // namespace Media

@@ -1,5 +1,5 @@
 /**
- * @file media/file.cpp
+ * @file media/muxer.cpp
  *
  * @brief
  *
@@ -21,10 +21,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "media/mkvmux.hpp"
-#include "media/tags.hpp"
-#include <filesystem>
+#include "media/muxer.hpp"
 
+#include <filesystem>
 extern "C" {
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
@@ -33,12 +32,13 @@ extern "C" {
 }
 
 #include "media/logger.hpp"
+#include "media/tags.hpp"
 
 namespace TitleFinder {
 
 namespace Media {
 
-MkvMux::MkvMux(const FileInfo& input) : File(""), _input(input) {
+Muxer::Muxer(const FileInfo& input) : File(""), _input(input) {
   // Open file
   _videoCodec = _input.getVideoCodec();
   _audioCodec = _input.getAudioCodec();
@@ -48,10 +48,10 @@ MkvMux::MkvMux(const FileInfo& input) : File(""), _input(input) {
   _tags = _input._tags;
 }
 
-void MkvMux::transmux(std::string_view output) {
+void Muxer::transmux(std::string_view output) {
   _path = output;
-  _path.replace_extension("mkv");
-  Logger()->info("Transmuxing MKV {} to {}", _input.getPath().string(),
+  _path.replace_extension(_extension);
+  Logger()->info("Transmuxing {} {} to {}", _format, _input.getPath().string(),
                  _path.string());
 
   if (!_input.isOpen()) {
@@ -66,7 +66,7 @@ void MkvMux::transmux(std::string_view output) {
   }
 
   AVFormatContext* output_fc = nullptr;
-  avformat_alloc_output_context2(&output_fc, nullptr, "matroska",
+  avformat_alloc_output_context2(&output_fc, nullptr, &_format[0],
                                  _path.c_str());
   if (!output_fc) {
     Logger()->error("Unable to create output context for file {}",
@@ -238,7 +238,7 @@ void MkvMux::transmux(std::string_view output) {
   av_write_trailer(output_fc);
 }
 
-void MkvMux::setTag(const int id, std::string value) {
+void Muxer::setTag(const int id, std::string value) {
   if (id < Tag::numberOfTags)
     _tags.insert_or_assign(id, std::move(value));
   else

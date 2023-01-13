@@ -90,7 +90,7 @@ protected:
 
   Tag::TagDict _tags;
 
-  friend class MkvMux;
+  friend class Muxer;
 };
 
 } // namespace Media

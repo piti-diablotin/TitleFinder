@@ -12,7 +12,7 @@ add_library(
   file.cpp
   fileinfo.cpp
   logger.cpp
-  mkvmux.cpp
+  muxer.cpp
   )
 
 add_library(titlefinder::media ALIAS media)
@@ -37,7 +37,7 @@ set(MEDIA_INCLUDES_PUBLIC
   file.hpp
   fileinfo.hpp
   logger.hpp
-  mkvmux.hpp
+  muxer.hpp
   tags.hpp
   )
 
