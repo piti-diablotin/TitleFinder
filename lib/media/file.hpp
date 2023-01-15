@@ -49,6 +49,8 @@ public:
   enum class Container { Mkv, Avi, Mp4, Other };
   using Lang = std::string;
 
+  File(File&& other) = default;
+
   /**
    * Destructor
    */

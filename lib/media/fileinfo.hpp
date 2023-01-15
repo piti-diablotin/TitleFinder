@@ -51,6 +51,8 @@ public:
    */
   explicit FileInfo(std::string_view fileuri);
 
+  FileInfo(FileInfo&& other) = default;
+
   /**
    * Destructor
    */
