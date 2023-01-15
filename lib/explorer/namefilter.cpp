@@ -35,7 +35,8 @@ using json = nlohmann::json;
 
 namespace {
 constexpr const char kReplacements[] = "replacements";
-}
+const std::regex kProtection(R"(([\\\^\$\.\|\?\*\+\(\)\[\]\{\}]))");
+} // namespace
 
 namespace TitleFinder {
 
@@ -67,11 +68,12 @@ NameFilter::NameFilter(std::string_view blacklist) : _regex(), _db() {
   }
   _regex.resize(_db[kReplacements].size());
   int i = 0;
-  const std::regex protection(R"(([\\\^\$\.\|\?\*\+\(\)\[\]\{\}]))");
   for (const auto& r : _db[kReplacements]) {
     std::string source =
-        std::regex_replace(r.value("source", ""), protection, "\\$1",
+        std::regex_replace(r.value("source", ""), kProtection, "\\$1",
                            std::regex_constants::match_any);
+    if (source.empty())
+      continue;
     std::string replacement = r.value("replacement", "");
     bool casesensitive = r["casesensitive"];
     Logger()->trace("source: {: <20s}, replacement {: <20s}", source,
@@ -81,6 +83,7 @@ NameFilter::NameFilter(std::string_view blacklist) : _regex(), _db() {
                                                         : std::regex::icase),
                        replacement));
   }
+  _regex.resize(i);
 }
 
 std::string NameFilter::filter(const std::string& input) {
@@ -97,7 +100,8 @@ std::string NameFilter::filter(const std::string& input) {
 
 void NameFilter::add(const std::string& source, const std::string& replacement,
                      bool casesensitive) {
-
+  if (source.empty())
+    return;
   json item = {{"source", source},
                {"replacement", replacement},
                {"casesensitive", casesensitive}};
@@ -106,6 +110,23 @@ void NameFilter::add(const std::string& source, const std::string& replacement,
     _db[kReplacements] = json::array();
 
   _db[kReplacements].push_back(std::move(item));
+  std::regex_replace(source, kProtection, "\\$1",
+                     std::regex_constants::match_any);
+  Logger()->trace("source: {: <20s}, replacement {: <20s}", source,
+                  replacement);
+  _regex.push_back(std::move(
+      std::make_pair(std::regex(source, casesensitive ? std::regex::ECMAScript
+                                                      : std::regex::icase),
+                     replacement)));
+}
+
+void NameFilter::dump(const std::string& filename) {
+  std::ofstream output(filename, std::ios::out);
+  if (!output.is_open())
+    throw std::runtime_error(fmt::format("Unable to open file {}", filename));
+
+  output << _db.dump(2);
+  output.close();
 }
 
 } // namespace Explorer

@@ -52,7 +52,7 @@ public:
   void add(const std::string& source, const std::string& replacement,
            bool casesensitive);
 
-  void dump(std::string_view filename);
+  void dump(const std::string& filename);
 
 private:
   std::vector<std::pair<std::regex, std::string>> _regex;
