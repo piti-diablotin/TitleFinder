@@ -2,6 +2,7 @@
 add_library(
   explorer 
   discriminator.cpp
+  engine.cpp
   logger.cpp
   namefilter.cpp
   )
