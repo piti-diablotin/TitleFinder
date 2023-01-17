@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.11)
 project(
   TitleFinder
-  VERSION 0.1
+  VERSION 0.1.0
   LANGUAGES CXX
   )
 
@@ -39,31 +39,11 @@ if (CMAKE_BUILD_TYPE STREQUAL "Debug")
   endif()
 endif()
 
+set(CMKAE_BUILD_SHARED ON CACHE BOOL "Enable shared libraries")
+
 find_package(spdlog REQUIRED)
 find_package(fmt REQUIRED)
 
 add_subdirectory(lib)
 add_subdirectory(cli)
 
-include(CMakePackageConfigHelpers)
-write_basic_package_version_file(
-  "${CMAKE_CURRENT_BINARY_DIR}/titlefinder/titlefinderConfigVersion.cmake"
-  VERSION ${CMAKE_PROJECT_VERSION}
-  COMPATIBILITY SameMajorVersion
-  )
-
-configure_file(titlefinderConfig.cmake.in
-  "${CMAKE_CURRENT_BINARY_DIR}/titlefinder/titlefinderConfig.cmake"
-  @ONLY
-  )
-
-install(EXPORT titlefinderTargets
-  NAMESPACE titlefinder::
-  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/titlefinder
-  )
-
-install(FILES
-  ${CMAKE_CURRENT_BINARY_DIR}/titlefinder/titlefinderConfigVersion.cmake
-  ${CMAKE_CURRENT_BINARY_DIR}/titlefinder/titlefinderConfig.cmake
-  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/titlefinder
-  )

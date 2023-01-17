@@ -1,3 +1,12 @@
+project(
+  TitleFinder_cli
+  VERSION 0.2.0
+  LANGUAGES CXX
+  )
+
+include(CheckIncludeFileCXX)
+CHECK_INCLUDE_FILE_CXX(sys/ioctl.h ioctl_FOUND)
+
 add_executable(titlefinder_cli
   titlefinder_cli.cpp
   parser.cpp
@@ -5,10 +14,18 @@ add_executable(titlefinder_cli
 
 target_link_libraries(titlefinder_cli
   PRIVATE
-  titlefinder::api
-  titlefinder::media
   titlefinder::explorer
   fmt::fmt
+  )
+
+target_compile_definitions(titlefinder_cli
+  PRIVATE
+  TITLEFINDER_VERSION="${PROJECT_VERSION}"
+  TITLEFINDER_VERSION_MAJOR=${PROJECT_VERSION_MAJOR}
+  TITLEFINDER_VERSION_MINOR=${PROJECT_VERSION_MINOR}
+  TITLEFINDER_VERSION_PATCH=${PROJECT_VERSION_PATCH}
+  TITLEFINDER_NAME="${PROJECT_NAME}"
+  $<$<BOOL:ioctl_FOUND>:HAVE_IOCTL>
   )
 
 include(GNUInstallDirs)
