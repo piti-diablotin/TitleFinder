@@ -16,7 +16,7 @@ add_library(titlefinder::api ALIAS api)
 
 target_include_directories(api
   PUBLIC
-  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/lib>
+  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
   $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/titlefinder>
   )
 

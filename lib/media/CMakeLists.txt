@@ -20,7 +20,7 @@ add_library(titlefinder::media ALIAS media)
 target_include_directories(
   media
   PUBLIC
-  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/lib>
+  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
   $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/titlefinder>
   )
 

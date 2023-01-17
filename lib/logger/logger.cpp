@@ -21,7 +21,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "api/logger.hpp"
+#include "logger/logger.hpp"
 #include <memory>
 #include <spdlog/logger.h>
 #include <spdlog/spdlog.h>

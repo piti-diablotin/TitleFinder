@@ -6,7 +6,7 @@ add_library(titlefinder::logger ALIAS logger)
 
 target_include_directories(logger
   PUBLIC
-  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/lib>
+  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
   $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/titlefinder>
   )
 

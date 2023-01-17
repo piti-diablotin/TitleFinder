@@ -38,7 +38,8 @@ namespace TitleFinder {
 
 namespace Media {
 
-Muxer::Muxer(const FileInfo& input) : File(""), _input(input) {
+Muxer::Muxer(const FileInfo& input)
+    : File(""), _format(), _extension(""), _input(input) {
   // Open file
   _videoCodec = _input.getVideoCodec();
   _audioCodec = _input.getAudioCodec();

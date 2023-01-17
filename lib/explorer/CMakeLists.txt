@@ -12,13 +12,16 @@ add_library(titlefinder::explorer ALIAS explorer)
 target_include_directories(
   explorer
   PUBLIC
-  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/lib>
+  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
   $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/titlefinder>
   )
 
 target_link_libraries(
   explorer
   PRIVATE
+  titlefinder::api
+  titlefinder::logger
+  titlefinder::media
   )
 
 set(EXPLORER_INCLUDES_PUBLIC
