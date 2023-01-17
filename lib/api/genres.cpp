@@ -38,7 +38,8 @@ process(std::shared_ptr<TitleFinder::Api::Tmdb> tmdb,
   if (options.back() == '&')
     options.pop_back();
 
-  auto j = tmdb->get(fmt::format("{}{}", url, options));
+  auto j = tmdb->get(
+      fmt::format("{}{}{}", url, options.empty() ? "" : "?", options));
 
   CHECK_RESPONSE(j);
 

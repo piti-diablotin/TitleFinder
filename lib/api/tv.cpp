@@ -42,7 +42,8 @@ Response_t Tv::getDetails(const int tv_id, const optionalString language) {
   if (options.back() == '&')
     options.pop_back();
 
-  auto j = _tmdb->get(fmt::format("{}{}", url, options));
+  auto j = _tmdb->get(
+      fmt::format("{}{}{}", url, options.empty() ? "" : "?", options));
 
   CHECK_RESPONSE(j);
 
