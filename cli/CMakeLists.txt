@@ -10,6 +10,8 @@ CHECK_INCLUDE_FILE_CXX(sys/ioctl.h ioctl_FOUND)
 add_executable(titlefinder_cli
   titlefinder_cli.cpp
   parser.cpp
+  application.cpp
+  search.cpp
   )
 
 target_link_libraries(titlefinder_cli
