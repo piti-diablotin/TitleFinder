@@ -12,6 +12,7 @@ add_executable(titlefinder_cli
   parser.cpp
   application.cpp
   search.cpp
+  rename.cpp
   )
 
 target_link_libraries(titlefinder_cli

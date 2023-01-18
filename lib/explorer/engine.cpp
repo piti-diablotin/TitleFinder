@@ -62,7 +62,7 @@ namespace Explorer {
 
 Engine::Engine()
     : _tmdb{nullptr}, _language{}, _moviesGenres{},
-      _tvShowsGenres{}, _filter{nullptr} {}
+      _tvShowsGenres{}, _filter{nullptr}, _spaceReplacement('.') {}
 
 void Engine::setTmdbKey(const std::string& key) {
   _tmdb = Api::Tmdb::create(key);
@@ -172,9 +172,11 @@ const Engine::Prediction Engine::predictFile(std::string file) {
     Api::MovieInfoCompact* tmp =
         new Api::MovieInfoCompact(std::move(rep->results[0]));
     pred.movie.reset(tmp);
-    pred.output = fmt::format("{}.({}).{}", pred.movie->title,
+    pred.output = fmt::format("{}.({}){}", pred.movie->title,
                               pred.movie->release_date.substr(0, 4),
                               pred.input.getPath().extension().string());
+    std::replace(pred.output.begin(), pred.output.end(), ' ',
+                 _spaceReplacement);
     Logger()->debug("Movie title found: {}", pred.movie->title);
 
     return pred;
@@ -183,14 +185,19 @@ const Engine::Prediction Engine::predictFile(std::string file) {
   if (t == Type::Movie) {
     Logger()->debug("Searching for movie title {}", title);
     try {
-      return makeMovie(discri.getTitle());
+      return makeMovie(title);
     } catch (const std::exception& e) {
       using namespace Media::Tag;
-      std::string newTest(info.getTag("title"_tagid).data());
-      if (newTest.empty())
+      try {
+        std::string newTest(info.getTag("title"_tagid).data());
+        if (newTest.empty())
+          throw e;
+        Logger()->debug("Searching for movie now with title {}", title);
+        return makeMovie(newTest);
+      } catch (const std::exception& e) {
+        Logger()->error("No tag title");
         throw e;
-      Logger()->debug("Searching for movie now with title {}", title);
-      return makeMovie(newTest);
+      }
     }
   } else if (t == Type::Show) {
     Logger()->debug("Searching for tvshow title {}", title);
@@ -214,10 +221,13 @@ const Engine::Prediction Engine::predictFile(std::string file) {
                              return ep.episode_number == discri.getEpisode();
                            });
 
-    pred.output = fmt::format("{}.S{:02d}E{:02d}.{}.{}", details->name,
+    pred.output = fmt::format("{}.S{:02d}E{:02d}.{}{}", pred.tvshow->name,
                               ep->season_number, ep->episode_number, ep->name,
                               pred.input.getPath().extension().string());
+    std::replace(pred.output.begin(), pred.output.end(), ' ',
+                 _spaceReplacement);
     Logger()->debug("Episode title is {}", ep->name);
+    pred.episode = std::make_unique<Api::Episode>(std::move(*ep));
     return pred;
   } else {
     Logger()->debug("Looking for a title tag (assuming movie)");

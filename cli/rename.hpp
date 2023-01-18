@@ -1,5 +1,5 @@
 /**
- * @file cli/Search.hpp
+ * @file cli/rename.hpp
  *
  * @brief
  *
@@ -25,26 +25,29 @@
 
 #include "application.hpp"
 
+#include <string>
+
 namespace TitleFinder {
 
 namespace Cli {
 
-class Search final : public Application {
+class Rename final : public Application {
+
 public:
   /**
    * Empty constructor
    */
-  explicit Search(int argc, char* argv[]);
+  explicit Rename(int argc, char* argv[]);
 
   /**
    * Destructor
    */
-  ~Search() final = default;
+  virtual ~Rename() final = default;
 
   int run() final;
 
 private:
-  std::string _query;
+  std::string _filename;
 };
 
 } // namespace Cli

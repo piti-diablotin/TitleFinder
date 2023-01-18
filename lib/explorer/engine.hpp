@@ -102,6 +102,7 @@ private:
   Api::Genres::GenresList _moviesGenres;
   Api::Genres::GenresList _tvShowsGenres;
   std::unique_ptr<NameFilter> _filter;
+  char _spaceReplacement;
 };
 
 } // namespace Explorer

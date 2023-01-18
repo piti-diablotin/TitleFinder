@@ -42,22 +42,24 @@ int Search::run() {
 
   try {
     _parser.parse();
+
+    if (_parser.isSetOption("help")) {
+      std::cout << _parser << std::endl;
+      return 0;
+    }
+
     if (_parser.isSetOption("seasons") && _parser.isSetOption("season")) {
       std::cerr << "Options \"seasons\" and \"season\" are exclusive."
                 << std::endl;
       return 1;
     }
+
     if (_parser.isSetOption("season")) {
       _parser.getOption<int>("season");
     }
   } catch (const std::exception& e) {
     std::cerr << e.what() << std::endl;
     return 1;
-  }
-
-  if (_parser.isSetOption("help")) {
-    std::cout << _parser << std::endl;
-    return 0;
   }
   Explorer::Engine engine;
   try {

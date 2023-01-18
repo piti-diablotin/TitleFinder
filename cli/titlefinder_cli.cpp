@@ -2,6 +2,7 @@
 #include <iostream>
 
 #include "parser.hpp"
+#include "rename.hpp"
 #include "search.hpp"
 
 namespace {
@@ -25,6 +26,9 @@ int main(int argc, char** argv) {
     if (strcmp("search", argv[1]) == 0) {
       Cli::Search search(argc, argv);
       return search.run();
+    } else if (strcmp("rename", argv[1]) == 0) {
+      Cli::Rename rename(argc, argv);
+      return rename.run();
     } else {
 
       try {
