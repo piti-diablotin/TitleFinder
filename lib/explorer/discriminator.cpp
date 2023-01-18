@@ -30,9 +30,9 @@
 
 namespace {
 
-constexpr const char* seasonDiscriminant_{R"([\.\-_][s]?(\d{1,2})$)"};
+constexpr const char* seasonDiscriminant_{R"([\.\-_ ][s]?(\d{1,2})$)"};
 constexpr const char* episodeDiscriminant_{
-    R"([\.\-_][s]?(\d{1,2})[xe](\d{1,2}))"};
+    R"([\.\-_ ][s]?(\d{1,2})[xe](\d{1,2}))"};
 constexpr const char* movieDiscriminant_{
     R"([\._\- ]?\(?(\d{4})[^a-zA-Z0-9]\)?)"};
 
@@ -54,7 +54,7 @@ Type Discriminator::getType(const std::filesystem::path& p) {
   _title.clear();
   _year = -1;
 
-  std::string copy = p.stem().string();
+  std::string copy = p.string();
   std::smatch m;
   Type t = Type::None;
   if (std::regex_search(copy, m, _reSE)) {
@@ -64,7 +64,7 @@ Type Discriminator::getType(const std::filesystem::path& p) {
     _title = m.prefix().str();
     t = Type::Show;
   } else if (std::regex_search(copy, m, _reM)) {
-    Logger()->debug("{} analyzed as Movie", copy);
+    Logger()->debug("{} analyzed as Movie with year {}", copy, m[1].str());
     _title = m.prefix();
     _year = std::stoi(m[1].str());
     t = Type::Movie;

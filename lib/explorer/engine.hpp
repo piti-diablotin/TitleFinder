@@ -78,23 +78,25 @@ public:
   void setBlacklist(const std::string& blacklistPath);
 
   std::unique_ptr<Api::Search::SearchMovies>
-  searchMovie(const std::string& search);
+  searchMovie(const std::string& search, Api::optionalInt year = {}) const;
 
   std::unique_ptr<Api::Search::SearchTvShows>
-  searchTvShow(const std::string& search);
+  searchTvShow(const std::string& search, Api::optionalInt year = {}) const;
 
-  std::unique_ptr<Api::Tv::Details> getTvShowDetails(int id);
+  std::unique_ptr<Api::Tv::Details> getTvShowDetails(int id) const;
 
-  std::unique_ptr<Api::TvSeasons::Details> getSeasonDetails(int id, int season);
+  std::unique_ptr<Api::TvSeasons::Details> getSeasonDetails(int id,
+                                                            int season) const;
 
-  const Prediction predictFile(std::string file);
+  const Prediction predictFile(std::string file) const;
 
-  void listFiles(const std::filesystem::path& directory, bool recursive);
+  void listFiles(const std::filesystem::path& directory, bool recursive) const;
 
-  void apply(void);
+  int apply(const Prediction& pred, Media::FileInfo::Container output,
+            const std::filesystem::path& outputDirectory) const;
 
   void autoRename(void* list, Media::FileInfo::Container output, int njobs,
-                  const std::filesystem::path& outputDirectory);
+                  const std::filesystem::path& outputDirectory) const;
 
 private:
   std::shared_ptr<Api::Tmdb> _tmdb;

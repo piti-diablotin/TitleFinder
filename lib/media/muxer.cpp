@@ -91,6 +91,7 @@ void Muxer::transmux(std::string_view output) {
   if (!_tags.empty()) {
     Logger()->debug("Setting new tag values");
     for (auto& t : _tags) {
+      Logger()->debug("Set tag {} to {}", t.first, t.second);
       ret = av_dict_set(&output_fc->metadata, Tag::tags[t.first],
                         t.second.c_str(), 0);
       if (ret < 0)
@@ -240,7 +241,7 @@ void Muxer::transmux(std::string_view output) {
 }
 
 void Muxer::setTag(const int id, std::string value) {
-  if (id < Tag::numberOfTags)
+  if (id >= 0 && id < Tag::numberOfTags)
     _tags.insert_or_assign(id, std::move(value));
   else
     Logger()->warn("Tag id {} does not exist", id);

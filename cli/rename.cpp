@@ -28,6 +28,7 @@
 #include <stdexcept>
 
 #include "explorer/engine.hpp"
+#include "media/fileinfo.hpp"
 
 namespace TitleFinder {
 
@@ -60,7 +61,8 @@ int Rename::run() {
           fmt::format("{} is not a regular file.", _filename));
     }
 
-    outputDir = workingFile.parent_path();
+    outputDir = std::filesystem::absolute(workingFile).parent_path();
+    std::cerr << "outputdir" << outputDir.string() << std::endl;
     if (_parser.isSetOption("output-directory")) {
       outputDir = _parser.getOption<std::string>("output-directory");
     }
@@ -96,7 +98,6 @@ int Rename::run() {
       fmt::print("{}\n", prediction.movie->overview);
       fmt::print("Rating: {:2.0f}%\n", prediction.movie->vote_average * 10);
       fmt::print("Output file => {}\n", prediction.output);
-      return 0;
     } else if (prediction.tvshow && prediction.episode) {
       fmt::print("{} {:d}x{:02d} {} ({})\n", prediction.tvshow->name,
                  prediction.episode->season_number,
@@ -105,12 +106,19 @@ int Rename::run() {
       fmt::print("{}\n", prediction.episode->overview);
       fmt::print("Rating: {:2.0f}%\n", prediction.episode->vote_average * 10);
       fmt::print("Output file => {}\n", prediction.output);
-      return 0;
     } else {
       std::cout << prediction.tvshow.get() << std::endl;
       std::cout << prediction.episode.get() << std::endl;
       return 1;
     }
+    if (_parser.isSetOption("dry-run"))
+      return 0;
+
+    Media::FileInfo::Container container = Media::FileInfo::Container::Mkv;
+    if (_parser.getOption<std::string>("muxer") == "mp4")
+      container = Media::FileInfo::Container::Mp4;
+
+    return engine.apply(prediction, container, outputDir);
   } catch (const std::exception& e) {
     std::cerr << "Failed to predict file " << _filename << std::endl;
     return 1;

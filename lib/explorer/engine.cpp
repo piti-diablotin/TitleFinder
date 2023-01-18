@@ -29,6 +29,7 @@
 #include <stdexcept>
 
 #include "api/authentication.hpp"
+#include "api/optionals.hpp"
 #include "api/search.hpp"
 #include "api/structs.hpp"
 #include "api/tmdb.hpp"
@@ -37,6 +38,7 @@
 #include "explorer/discriminator.hpp"
 #include "explorer/logger.hpp"
 #include "media/fileinfo.hpp"
+#include "media/muxer.hpp"
 #include "media/tags.hpp"
 
 #define CAST_REPONSE(rep__, type__, dest__)                                    \
@@ -104,28 +106,30 @@ void Engine::setBlacklist(const std::string& blacklistPath) {
 }
 
 std::unique_ptr<Api::Search::SearchMovies>
-Engine::searchMovie(const std::string& searchString) {
+Engine::searchMovie(const std::string& searchString,
+                    Api::optionalInt year) const {
   if (!_tmdb)
     throw std::runtime_error("You need to set an API key first");
   Api::Search search(_tmdb);
-  auto rep = search.searchMovies(_language, searchString, {}, {}, {}, {}, {});
+  auto rep = search.searchMovies(_language, searchString, {}, {}, {}, year, {});
   CAST_REPONSE(rep, Api::Search::SearchMovies, s);
   (void)rep.release();
   return std::unique_ptr<Api::Search::SearchMovies>(s);
 }
 
 std::unique_ptr<Api::Search::SearchTvShows>
-Engine::searchTvShow(const std::string& searchString) {
+Engine::searchTvShow(const std::string& searchString,
+                     Api::optionalInt year) const {
   if (!_tmdb)
     throw std::runtime_error("You need to set an API key first");
   Api::Search search(_tmdb);
-  auto rep = search.searchTvShows(_language, {}, searchString, {}, {});
+  auto rep = search.searchTvShows(_language, {}, searchString, {}, year);
   CAST_REPONSE(rep, Api::Search::SearchTvShows, s);
   (void)rep.release();
   return std::unique_ptr<Api::Search::SearchTvShows>(s);
 }
 
-std::unique_ptr<Api::Tv::Details> Engine::getTvShowDetails(int id) {
+std::unique_ptr<Api::Tv::Details> Engine::getTvShowDetails(int id) const {
   if (!_tmdb)
     throw std::runtime_error("You need to set an API key first");
   Api::Tv show(_tmdb);
@@ -135,8 +139,8 @@ std::unique_ptr<Api::Tv::Details> Engine::getTvShowDetails(int id) {
   return std::unique_ptr<Api::Tv::Details>(s);
 }
 
-std::unique_ptr<Api::TvSeasons::Details> Engine::getSeasonDetails(int id,
-                                                                  int season) {
+std::unique_ptr<Api::TvSeasons::Details>
+Engine::getSeasonDetails(int id, int season) const {
   if (!_tmdb)
     throw std::runtime_error("You need to set an API key first");
   Api::TvSeasons tvseasons(_tmdb);
@@ -146,26 +150,31 @@ std::unique_ptr<Api::TvSeasons::Details> Engine::getSeasonDetails(int id,
   return std::unique_ptr<Api::TvSeasons::Details>(s);
 }
 
-const Engine::Prediction Engine::predictFile(std::string file) {
+const Engine::Prediction Engine::predictFile(std::string file) const {
   Media::FileInfo info(file);
   if (!std::filesystem::exists(info.getPath()))
     throw std::runtime_error("File {} does not exist.");
   if (_filter) {
-    file = _filter->filter(info.getPath().stem());
-    Logger()->debug("Title after filtering is {}", file);
+    file = _filter->filter(info.getPath());
+    Logger()->debug("File after filtering is {}", file);
   }
 
   Explorer::Discriminator discri;
   auto t = discri.getType(file);
   std::string title = discri.getTitle();
-  Logger()->debug("Discriminator found title {}", title);
+  Logger()->debug("Discriminator found title {} and year {}", title,
+                  discri.getYear());
   std::replace(title.begin(), title.end(), '.', ' ');
   std::regex_replace(title, searchCleaner, " ",
                      std::regex_constants::match_any);
 
-  auto makeMovie = [this,
-                    &info](const std::string& title) -> Engine::Prediction {
-    auto rep = this->searchMovie(title);
+  auto makeMovie = [this, &info,
+                    &discri](const std::string& title) -> Engine::Prediction {
+    Api::optionalInt year;
+    if (discri.getYear() != -1) {
+      year = discri.getYear();
+    }
+    auto rep = this->searchMovie(title, year);
     if (rep->total_results == 0)
       throw std::logic_error("No match found");
     Prediction pred(std::move(info));
@@ -240,32 +249,84 @@ const Engine::Prediction Engine::predictFile(std::string file) {
   return makeMovie("Matrix");
 }
 
-void Engine::listFiles(const std::filesystem::path& directory, bool recursive) {
-}
+void Engine::listFiles(const std::filesystem::path& directory,
+                       bool recursive) const {}
 
-void Engine::apply(void) {
+int Engine::apply(const Prediction& pred, Media::FileInfo::Container output,
+                  const std::filesystem::path& outputDirectory) const {
 
-  // struct toto {
-  //   artist
-  //     composer
-  //     date
-  //     director
-  //     description
-  //     genre
-  //     location
-  //     network
-  //     publisher
-  //     performer
-  //     rating
-  //     title
-  //     year
-  //     synopsis
-  // }
+  using namespace Media::Tag;
+  if (!std::filesystem::is_directory(outputDirectory)) {
+    Logger()->error("Output directory {} is not a directory",
+                    outputDirectory.string());
+    return 1;
+  }
+
+  std::string outputFilename = outputDirectory / pred.output;
+
+  Media::Muxer* muxer = nullptr;
+  ;
+  switch (output) {
+  case Media::FileInfo::Container::Mkv:
+    muxer = new Media::MkvMuxer(pred.input);
+    break;
+  case Media::FileInfo::Container::Mp4:
+    muxer = new Media::Mp4Muxer(pred.input);
+    break;
+  default:
+    Logger()->error("Output muxer not available");
+    return 1;
+  }
+
+  if (muxer && pred.movie) {
+    muxer->setTag("title"_tagid, pred.movie->title);
+    muxer->setTag("date"_tagid, pred.movie->release_date);
+    muxer->setTag("year"_tagid, pred.movie->release_date.substr(0, 4));
+    muxer->setTag("description"_tagid, pred.movie->overview);
+    muxer->setTag("synopsis"_tagid, pred.movie->overview);
+    if (!pred.movie->genre_ids.empty()) {
+      std::string genres;
+      for (auto id : pred.movie->genre_ids) {
+        try {
+          genres += _moviesGenres.genres.at(id) + "/";
+        } catch (const std::exception& e) {
+          continue;
+        }
+      }
+      genres.pop_back();
+      muxer->setTag("genre"_tagid, genres);
+    }
+  } else if (muxer && pred.tvshow && pred.episode) {
+    muxer->setTag("title"_tagid, pred.episode->name);
+    muxer->setTag("date"_tagid, pred.episode->air_date);
+    muxer->setTag("year"_tagid, pred.episode->air_date.substr(0, 4));
+    muxer->setTag("description"_tagid, pred.episode->overview);
+    muxer->setTag("synopsis"_tagid, pred.episode->overview);
+    muxer->setTag("album"_tagid, pred.tvshow->name);
+    if (!pred.tvshow->genre_ids.empty()) {
+      std::string genres;
+      for (auto id : pred.tvshow->genre_ids) {
+        try {
+          genres += _tvShowsGenres.genres.at(id) + "/";
+        } catch (const std::exception& e) {
+          continue;
+        }
+      }
+      genres.pop_back();
+      muxer->setTag("genre"_tagid, genres);
+    }
+  }
+
+  if (muxer) {
+    muxer->transmux(outputFilename);
+  } else {
+    std::filesystem::rename(pred.input.getPath(), outputFilename);
+  }
 }
 
 void Engine::autoRename(void* list, Media::FileInfo::Container output,
                         int njobs,
-                        const std::filesystem::path& outputDirectory) {}
+                        const std::filesystem::path& outputDirectory) const {}
 
 } // namespace Explorer
 
