@@ -54,7 +54,7 @@ Type Discriminator::getType(const std::filesystem::path& p) {
   _title.clear();
   _year = -1;
 
-  std::string copy = p.string();
+  std::string copy = p.filename().string();
   std::smatch m;
   Type t = Type::None;
   if (std::regex_search(copy, m, _reSE)) {

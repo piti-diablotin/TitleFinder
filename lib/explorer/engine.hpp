@@ -53,10 +53,12 @@ public:
     std::unique_ptr<Api::TvShowInfoCompact> tvshow;
     std::unique_ptr<Api::Episode> episode;
     std::string output;
+    Media::FileInfo::Container container;
 
     explicit Prediction(Media::FileInfo&& in)
         : input(std::move(in)), movie(nullptr), tvshow(nullptr),
-          episode(nullptr), output{} {}
+          episode(nullptr), output{},
+          container(Media::FileInfo::Container::Other) {}
   };
 
   /**
@@ -89,16 +91,17 @@ public:
   std::unique_ptr<Api::TvSeasons::Details> getSeasonDetails(int id,
                                                             int season) const;
 
-  const Prediction predictFile(std::string file) const;
+  const Prediction
+  predictFile(std::string file, Media::FileInfo::Container container,
+              const std::filesystem::path& outputDirectory) const;
 
   std::queue<std::filesystem::path>
   listFiles(const std::filesystem::path& directory, bool recursive) const;
 
-  int apply(const Prediction& pred, Media::FileInfo::Container output,
-            const std::filesystem::path& outputDirectory) const;
+  int apply(const Prediction& pred) const;
 
   void autoRename(std::queue<std::filesystem::path>& queue,
-                  Media::FileInfo::Container output, int njobs,
+                  Media::FileInfo::Container container, int njobs,
                   const std::filesystem::path& outputDirectory) const;
 
 private:

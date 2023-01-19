@@ -25,6 +25,7 @@
 
 #include <algorithm>
 #include <filesystem>
+#include <numeric>
 #include <regex>
 #include <stdexcept>
 
@@ -150,10 +151,20 @@ Engine::getSeasonDetails(int id, int season) const {
   return std::unique_ptr<Api::TvSeasons::Details>(s);
 }
 
-const Engine::Prediction Engine::predictFile(std::string file) const {
+const Engine::Prediction
+Engine::predictFile(std::string file, Media::FileInfo::Container container,
+                    const std::filesystem::path& outputDirectory) const {
+
   Media::FileInfo info(file);
+
   if (!std::filesystem::exists(info.getPath()))
     throw std::runtime_error("File {} does not exist.");
+
+  if (!std::filesystem::is_directory(outputDirectory)) {
+    throw std::runtime_error(fmt::format(
+        "Output directory {} is not a directory", outputDirectory.string()));
+  }
+
   if (_filter) {
     file = _filter->filter(info.getPath());
     Logger()->debug("File after filtering is {}", file);
@@ -168,8 +179,8 @@ const Engine::Prediction Engine::predictFile(std::string file) const {
   std::regex_replace(title, searchCleaner, " ",
                      std::regex_constants::match_any);
 
-  auto makeMovie = [this, &info,
-                    &discri](const std::string& title) -> Engine::Prediction {
+  auto makeMovie = [this, &info, &discri, &outputDirectory,
+                    container](const std::string& title) -> Engine::Prediction {
     Api::optionalInt year;
     if (discri.getYear() != -1) {
       year = discri.getYear();
@@ -181,13 +192,28 @@ const Engine::Prediction Engine::predictFile(std::string file) const {
     Api::MovieInfoCompact* tmp =
         new Api::MovieInfoCompact(std::move(rep->results[0]));
     pred.movie.reset(tmp);
+    Logger()->debug("Movie title found: {}", pred.movie->title);
+
     pred.output = fmt::format("{}.({}){}", pred.movie->title,
                               pred.movie->release_date.substr(0, 4),
                               pred.input.getPath().extension().string());
     std::replace(pred.output.begin(), pred.output.end(), ' ',
                  _spaceReplacement);
-    Logger()->debug("Movie title found: {}", pred.movie->title);
 
+    pred.output = outputDirectory / pred.output;
+    switch (container) {
+    case Media::FileInfo::Container::Mkv:
+      pred.container = Media::FileInfo::Container::Mkv;
+      pred.output = (outputDirectory / pred.output).replace_extension(".mkv");
+      break;
+    case Media::FileInfo::Container::Mp4:
+      pred.container = Media::FileInfo::Container::Mp4;
+      pred.output = (outputDirectory / pred.output).replace_extension(".mp4");
+      break;
+    default:
+      pred.output = (outputDirectory / pred.output).string();
+      break;
+    }
     return pred;
   };
 
@@ -229,13 +255,28 @@ const Engine::Prediction Engine::predictFile(std::string file) const {
                            [discri](const Api::Episode& ep) {
                              return ep.episode_number == discri.getEpisode();
                            });
+    Logger()->debug("Episode title is {}", ep->name);
 
     pred.output = fmt::format("{}.S{:02d}E{:02d}.{}{}", pred.tvshow->name,
                               ep->season_number, ep->episode_number, ep->name,
                               pred.input.getPath().extension().string());
     std::replace(pred.output.begin(), pred.output.end(), ' ',
                  _spaceReplacement);
-    Logger()->debug("Episode title is {}", ep->name);
+
+    switch (container) {
+    case Media::FileInfo::Container::Mkv:
+      pred.container = Media::FileInfo::Container::Mkv;
+      pred.output = (outputDirectory / pred.output).replace_extension(".mkv");
+      break;
+    case Media::FileInfo::Container::Mp4:
+      pred.container = Media::FileInfo::Container::Mp4;
+      pred.output = (outputDirectory / pred.output).replace_extension(".mp4");
+      break;
+    default:
+      pred.output = (outputDirectory / pred.output).string();
+      break;
+    }
+
     pred.episode = std::make_unique<Api::Episode>(std::move(*ep));
     return pred;
   } else {
@@ -246,6 +287,7 @@ const Engine::Prediction Engine::predictFile(std::string file) const {
       return makeMovie(newTest);
     throw std::logic_error("Unable to predict file");
   }
+
   return makeMovie("Matrix");
 }
 
@@ -259,33 +301,37 @@ Engine::listFiles(const std::filesystem::path& directory,
     return queue;
   }
 
+  auto acceptFile = [](const std::filesystem::directory_entry& entry) -> bool {
+    if (!entry.is_regular_file())
+      return false;
+    const std::string extension = entry.path().extension().string();
+    if (extension != "mp4" && extension != "mkv" && extension != "avi")
+      return false;
+    return true;
+  };
+
   if (recursive) {
     for (const auto& entry :
          std::filesystem::recursive_directory_iterator{directory}) {
-      queue.push(entry);
+      if (acceptFile(entry))
+        queue.push(entry);
     }
   } else {
     for (const auto& entry : std::filesystem::directory_iterator{directory}) {
-      queue.push(entry);
+      if (acceptFile(entry))
+        queue.push(entry);
     }
   }
+  return queue;
 }
 
-int Engine::apply(const Prediction& pred, Media::FileInfo::Container output,
-                  const std::filesystem::path& outputDirectory) const {
+int Engine::apply(const Prediction& pred) const {
 
   using namespace Media::Tag;
-  if (!std::filesystem::is_directory(outputDirectory)) {
-    Logger()->error("Output directory {} is not a directory",
-                    outputDirectory.string());
-    return 1;
-  }
-
-  std::string outputFilename = outputDirectory / pred.output;
 
   Media::Muxer* muxer = nullptr;
   ;
-  switch (output) {
+  switch (pred.container) {
   case Media::FileInfo::Container::Mkv:
     Logger()->info("Transmuxing to mkv");
     muxer = new Media::MkvMuxer(pred.input);
@@ -338,21 +384,26 @@ int Engine::apply(const Prediction& pred, Media::FileInfo::Container output,
   }
 
   if (muxer) {
-    muxer->transmux(outputFilename);
+    muxer->transmux(pred.output);
   } else {
-    std::filesystem::rename(pred.input.getPath(), outputFilename);
+    std::filesystem::rename(pred.input.getPath(), pred.output);
   }
   return 0;
 }
 
 void Engine::autoRename(std::queue<std::filesystem::path>& queue,
-                        Media::FileInfo::Container output, int njobs,
+                        Media::FileInfo::Container container, int njobs,
                         const std::filesystem::path& outputDirectory) const {
   while (!queue.empty()) {
     auto file(std::move(queue.front()));
-    queue.pop();
-    auto pred = this->predictFile(file.string());
-    this->apply(pred, output, outputDirectory);
+    try {
+      queue.pop();
+      auto pred = this->predictFile(file.string(), container, outputDirectory);
+      Logger()->info("{} => {}", pred.input.getPath().string(), pred.output);
+      this->apply(pred);
+    } catch (const std::exception& e) {
+      Logger()->error("File {} failed with: {}", file.string(), e.what());
+    }
   }
 }
 

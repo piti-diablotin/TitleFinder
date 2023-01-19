@@ -1,5 +1,5 @@
 /**
- * @file cli/rename.hpp
+ * @file cli/scan.hpp
  *
  * @brief
  *
@@ -23,41 +23,31 @@
 
 #pragma once
 
-#include "application.hpp"
-
-#include <string>
-
-#include "explorer/engine.hpp"
+#include "rename.hpp"
 
 namespace TitleFinder {
 
 namespace Cli {
 
-class Rename : public Application {
+class Scan : public Rename {
 
 public:
   /**
    * Empty constructor
    */
-  explicit Rename(int argc, char* argv[]);
+  Scan(int argc, char* argv[]);
 
   /**
    * Destructor
    */
-  ~Rename() override = default;
+  ~Scan() override = default;
 
   int run() override;
 
 protected:
-  virtual int prepare();
-  virtual int readyEngine();
-  virtual void print(const Explorer::Engine::Prediction& prediction);
-  virtual void setOptionalOptions();
+  void setOptionalOptions() override;
 
-  std::string _filename;
-  std::filesystem::path _outputDirectory;
-  Media::FileInfo::Container _container;
-  Explorer::Engine _engine;
+private:
 };
 
 } // namespace Cli

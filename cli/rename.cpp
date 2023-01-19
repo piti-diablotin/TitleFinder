@@ -25,6 +25,7 @@
 
 #include <filesystem>
 #include <fmt/core.h>
+#include <fmt/ostream.h>
 #include <stdexcept>
 
 #include "explorer/engine.hpp"
@@ -38,12 +39,16 @@ Rename::Rename(int argc, char* argv[])
     : Application(argc, argv), _filename(argv[argc - 1]), _outputDirectory(),
       _container(Media::FileInfo::Container::Other), _engine() {
   _parser.setBinaryName("titlefinder_cli rename");
-  _parser.setOption("dry-run", 'd',
-                    "Dry run, do not apply change, just print suggestion");
   _parser.setOption("muxer", 'm', "", "Output container", {"mkv", "mp4"});
   _parser.setOption("output-directory", 'o', "",
                     "Output directory to rename/remux the file.");
   _parser.setOption("blacklist", 'b', "", "Blacklist file containing filters");
+  this->setOptionalOptions();
+}
+
+void Rename::setOptionalOptions() {
+  _parser.setOption("dry-run", 'd',
+                    "Dry run, do not apply change, just print suggestion");
 }
 
 int Rename::prepare() {
@@ -55,16 +60,11 @@ int Rename::prepare() {
       return 0;
     }
 
-    std::filesystem::path workingFile(_filename);
-    if (!std::filesystem::is_regular_file(workingFile)) {
-      throw std::runtime_error(
-          fmt::format("{} is not a regular file.", _filename));
-    }
-
-    _outputDirectory = std::filesystem::absolute(workingFile).parent_path();
+    _outputDirectory = std::filesystem::absolute(_filename).parent_path();
     if (_parser.isSetOption("output-directory")) {
       _outputDirectory = _parser.getOption<std::string>("output-directory");
     }
+    _outputDirectory = std::filesystem::canonical(_outputDirectory);
 
     if (!std::filesystem::is_directory(_outputDirectory)) {
       throw std::runtime_error(
@@ -102,19 +102,29 @@ int Rename::readyEngine() {
 
 int Rename::run() {
 
-  this->prepare();
+  if (!std::filesystem::is_regular_file(_filename)) {
+    fmt::print(std::cerr, "{} is not a regular file.\n", _filename);
+    return 1;
+  }
 
-  this->readyEngine();
+  if (this->prepare()) {
+    return 1;
+  }
+
+  if (this->readyEngine()) {
+    return 1;
+  }
 
   try {
-    auto prediction = _engine.predictFile(_filename);
+    auto prediction =
+        _engine.predictFile(_filename, _container, _outputDirectory);
     this->print(prediction);
     if (_parser.isSetOption("dry-run"))
       return 0;
 
-    return _engine.apply(prediction, _container, _outputDirectory);
+    return _engine.apply(prediction);
   } catch (const std::exception& e) {
-    std::cerr << "Failed to predict file " << _filename << std::endl;
+    fmt::print(std::cerr, "Failed to predict file {}\n", _filename);
     return 1;
   }
 }
