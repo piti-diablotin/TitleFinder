@@ -249,8 +249,27 @@ const Engine::Prediction Engine::predictFile(std::string file) const {
   return makeMovie("Matrix");
 }
 
-void Engine::listFiles(const std::filesystem::path& directory,
-                       bool recursive) const {}
+std::queue<std::filesystem::path>
+Engine::listFiles(const std::filesystem::path& directory,
+                  bool recursive) const {
+  std::queue<std::filesystem::path> queue;
+  if (!std::filesystem::is_directory(directory)) {
+    Logger()->error("Input directory {} is not a directory",
+                    directory.string());
+    return queue;
+  }
+
+  if (recursive) {
+    for (const auto& entry :
+         std::filesystem::recursive_directory_iterator{directory}) {
+      queue.push(entry);
+    }
+  } else {
+    for (const auto& entry : std::filesystem::directory_iterator{directory}) {
+      queue.push(entry);
+    }
+  }
+}
 
 int Engine::apply(const Prediction& pred, Media::FileInfo::Container output,
                   const std::filesystem::path& outputDirectory) const {
@@ -268,14 +287,15 @@ int Engine::apply(const Prediction& pred, Media::FileInfo::Container output,
   ;
   switch (output) {
   case Media::FileInfo::Container::Mkv:
+    Logger()->info("Transmuxing to mkv");
     muxer = new Media::MkvMuxer(pred.input);
     break;
   case Media::FileInfo::Container::Mp4:
+    Logger()->info("Transmuxing to mp4");
     muxer = new Media::Mp4Muxer(pred.input);
     break;
   default:
-    Logger()->error("Output muxer not available");
-    return 1;
+    Logger()->info("No transmuxing, tags cannot be set.");
   }
 
   if (muxer && pred.movie) {
@@ -322,11 +342,19 @@ int Engine::apply(const Prediction& pred, Media::FileInfo::Container output,
   } else {
     std::filesystem::rename(pred.input.getPath(), outputFilename);
   }
+  return 0;
 }
 
-void Engine::autoRename(void* list, Media::FileInfo::Container output,
-                        int njobs,
-                        const std::filesystem::path& outputDirectory) const {}
+void Engine::autoRename(std::queue<std::filesystem::path>& queue,
+                        Media::FileInfo::Container output, int njobs,
+                        const std::filesystem::path& outputDirectory) const {
+  while (!queue.empty()) {
+    auto file(std::move(queue.front()));
+    queue.pop();
+    auto pred = this->predictFile(file.string());
+    this->apply(pred, output, outputDirectory);
+  }
+}
 
 } // namespace Explorer
 

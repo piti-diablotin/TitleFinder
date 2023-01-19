@@ -91,7 +91,7 @@ void Muxer::transmux(std::string_view output) {
   if (!_tags.empty()) {
     Logger()->debug("Setting new tag values");
     for (auto& t : _tags) {
-      Logger()->debug("Set tag {} to {}", t.first, t.second);
+      Logger()->trace("Set tag {} to {}", Tag::tags[t.first], t.second);
       ret = av_dict_set(&output_fc->metadata, Tag::tags[t.first],
                         t.second.c_str(), 0);
       if (ret < 0)

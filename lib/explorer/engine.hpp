@@ -25,6 +25,7 @@
 
 #include <filesystem>
 #include <memory>
+#include <queue>
 #include <string>
 
 #include "api/genres.hpp"
@@ -90,12 +91,14 @@ public:
 
   const Prediction predictFile(std::string file) const;
 
-  void listFiles(const std::filesystem::path& directory, bool recursive) const;
+  std::queue<std::filesystem::path>
+  listFiles(const std::filesystem::path& directory, bool recursive) const;
 
   int apply(const Prediction& pred, Media::FileInfo::Container output,
             const std::filesystem::path& outputDirectory) const;
 
-  void autoRename(void* list, Media::FileInfo::Container output, int njobs,
+  void autoRename(std::queue<std::filesystem::path>& queue,
+                  Media::FileInfo::Container output, int njobs,
                   const std::filesystem::path& outputDirectory) const;
 
 private:

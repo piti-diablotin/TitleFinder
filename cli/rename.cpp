@@ -35,19 +35,18 @@ namespace TitleFinder {
 namespace Cli {
 
 Rename::Rename(int argc, char* argv[])
-    : Application(argc, argv), _filename(argv[argc - 1]) {
+    : Application(argc, argv), _filename(argv[argc - 1]), _outputDirectory(),
+      _container(Media::FileInfo::Container::Other), _engine() {
   _parser.setBinaryName("titlefinder_cli rename");
   _parser.setOption("dry-run", 'd',
                     "Dry run, do not apply change, just print suggestion");
-  _parser.setOption("muxer", 'm', "mkv", "Output container", {"mkv", "mp4"});
+  _parser.setOption("muxer", 'm', "", "Output container", {"mkv", "mp4"});
   _parser.setOption("output-directory", 'o', "",
                     "Output directory to rename/remux the file.");
   _parser.setOption("blacklist", 'b', "", "Blacklist file containing filters");
 }
 
-int Rename::run() {
-  std::filesystem::path outputDir;
-  std::filesystem::path workingFile(_filename);
+int Rename::prepare() {
   try {
     _parser.parse();
 
@@ -56,72 +55,86 @@ int Rename::run() {
       return 0;
     }
 
+    std::filesystem::path workingFile(_filename);
     if (!std::filesystem::is_regular_file(workingFile)) {
       throw std::runtime_error(
           fmt::format("{} is not a regular file.", _filename));
     }
 
-    outputDir = std::filesystem::absolute(workingFile).parent_path();
-    std::cerr << "outputdir" << outputDir.string() << std::endl;
+    _outputDirectory = std::filesystem::absolute(workingFile).parent_path();
     if (_parser.isSetOption("output-directory")) {
-      outputDir = _parser.getOption<std::string>("output-directory");
+      _outputDirectory = _parser.getOption<std::string>("output-directory");
     }
 
-    if (!std::filesystem::is_directory(outputDir)) {
+    if (!std::filesystem::is_directory(_outputDirectory)) {
       throw std::runtime_error(
-          fmt::format("{} is not a directory", outputDir.string()));
+          fmt::format("{} is not a directory", _outputDirectory.string()));
     }
+
+    _container = Media::FileInfo::Container::Other;
+    if (_parser.getOption<std::string>("muxer") == "mp4")
+      _container = Media::FileInfo::Container::Mp4;
+    else if (_parser.getOption<std::string>("muxer") == "mkv")
+      _container = Media::FileInfo::Container::Mkv;
+
   } catch (const std::exception& e) {
     std::cerr << e.what() << std::endl;
     return 1;
   }
+  return 0;
+}
 
-  Explorer::Engine engine;
+int Rename::readyEngine() {
   try {
     std::string key = _parser.getOption<std::string>("api_key");
-    engine.setTmdbKey(key);
+    _engine.setTmdbKey(key);
   } catch (const std::exception& e) {
     std::cerr << "You need to provide an API key" << std::endl;
     return 1;
   }
-  engine.setLanguage(_parser.getOption<std::string>("language"));
+  _engine.setLanguage(_parser.getOption<std::string>("language"));
 
   if (_parser.isSetOption("blacklist")) {
-    engine.setBlacklist(_parser.getOption<std::string>("blacklist"));
+    _engine.setBlacklist(_parser.getOption<std::string>("blacklist"));
   }
+  return 0;
+}
+
+int Rename::run() {
+
+  this->prepare();
+
+  this->readyEngine();
+
   try {
-    auto prediction = engine.predictFile(_filename);
-    prediction.input.dumpInfo();
-    if (prediction.movie) {
-      fmt::print("{} ({})\n", prediction.movie->title,
-                 prediction.movie->release_date);
-      fmt::print("{}\n", prediction.movie->overview);
-      fmt::print("Rating: {:2.0f}%\n", prediction.movie->vote_average * 10);
-      fmt::print("Output file => {}\n", prediction.output);
-    } else if (prediction.tvshow && prediction.episode) {
-      fmt::print("{} {:d}x{:02d} {} ({})\n", prediction.tvshow->name,
-                 prediction.episode->season_number,
-                 prediction.episode->episode_number, prediction.episode->name,
-                 prediction.episode->air_date);
-      fmt::print("{}\n", prediction.episode->overview);
-      fmt::print("Rating: {:2.0f}%\n", prediction.episode->vote_average * 10);
-      fmt::print("Output file => {}\n", prediction.output);
-    } else {
-      std::cout << prediction.tvshow.get() << std::endl;
-      std::cout << prediction.episode.get() << std::endl;
-      return 1;
-    }
+    auto prediction = _engine.predictFile(_filename);
+    this->print(prediction);
     if (_parser.isSetOption("dry-run"))
       return 0;
 
-    Media::FileInfo::Container container = Media::FileInfo::Container::Mkv;
-    if (_parser.getOption<std::string>("muxer") == "mp4")
-      container = Media::FileInfo::Container::Mp4;
-
-    return engine.apply(prediction, container, outputDir);
+    return _engine.apply(prediction, _container, _outputDirectory);
   } catch (const std::exception& e) {
     std::cerr << "Failed to predict file " << _filename << std::endl;
     return 1;
+  }
+}
+
+void Rename::print(const Explorer::Engine::Prediction& prediction) {
+  // prediction.input.dumpInfo();
+  if (prediction.movie) {
+    fmt::print("{} ({})\n", prediction.movie->title,
+               prediction.movie->release_date);
+    fmt::print("{}\n", prediction.movie->overview);
+    fmt::print("Rating: {:2.1f}\n", prediction.movie->vote_average);
+    fmt::print("Output file => {}\n", prediction.output);
+  } else if (prediction.tvshow && prediction.episode) {
+    fmt::print("{} {:d}x{:02d} {} ({})\n", prediction.tvshow->name,
+               prediction.episode->season_number,
+               prediction.episode->episode_number, prediction.episode->name,
+               prediction.episode->air_date);
+    fmt::print("{}\n", prediction.episode->overview);
+    fmt::print("Rating: {:2.1f}\n", prediction.episode->vote_average);
+    fmt::print("Output file => {}\n", prediction.output);
   }
 }
 

@@ -52,7 +52,7 @@ bool Curl::_globalInit = false;
 Curl::Curl(const std::string& baseUrl)
     : _baseUrl(baseUrl), _curl(nullptr), _header(nullptr), _resourceUsed() {
   if (!_globalInit) {
-    Logger()->info("Init curl globaly");
+    Logger()->debug("Init curl globaly");
     curl_global_init(CURL_GLOBAL_ALL);
     _globalInit = true;
   }
