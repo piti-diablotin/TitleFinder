@@ -49,7 +49,7 @@ Muxer::Muxer(const FileInfo& input)
   _tags = _input._tags;
 }
 
-void Muxer::transmux(std::string_view output) {
+bool Muxer::transmux(std::string_view output) {
   _path = output;
   _path.replace_extension(_extension);
   Logger()->info("{} transmuxing {} to {}", _format, _input.getPath().string(),
@@ -57,13 +57,13 @@ void Muxer::transmux(std::string_view output) {
 
   if (!_input.isOpen()) {
     Logger()->error("Input file {} is not opened.", _input._path.string());
-    return;
+    return false;
   }
 
   int ret = 0;
   if (std::filesystem::exists(_path)) {
     Logger()->error("Output file {} already exists.", _path.string());
-    return;
+    return false;
   }
 
   AVFormatContext* output_fc = nullptr;
@@ -72,7 +72,7 @@ void Muxer::transmux(std::string_view output) {
   if (!output_fc) {
     Logger()->error("Unable to create output context for file {}",
                     _path.string());
-    return;
+    return false;
   }
   _formatCtxt.reset(output_fc);
 
@@ -110,7 +110,7 @@ void Muxer::transmux(std::string_view output) {
     outStream = avformat_new_stream(output_fc, nullptr);
     if (!outStream) {
       Logger()->error("Allocation of stream {} failed.", is);
-      return;
+      return false;
     }
 
     AVCodecParameters* params = outStream->codecpar;
@@ -119,7 +119,7 @@ void Muxer::transmux(std::string_view output) {
     ret = avcodec_parameters_copy(outStream->codecpar, inStream->codecpar);
     if (ret < 0) {
       Logger()->error("Unable to copy codec parametersfor stream {}.", is);
-      return;
+      return false;
     }
     if (!codecTag) {
       unsigned int codecTagTmp;
@@ -137,7 +137,7 @@ void Muxer::transmux(std::string_view output) {
         AVTimebaseSource::AVFMT_TBCF_AUTO);
     if (ret < 0) {
       Logger()->error("Unable to transfer timing info for stream {}.", is);
-      return;
+      return false;
     }
 
     if (outStream->time_base.num <= 0 || outStream->time_base.den <= 0) {
@@ -193,18 +193,18 @@ void Muxer::transmux(std::string_view output) {
     ret = avio_open(&output_fc->pb, _path.c_str(), AVIO_FLAG_WRITE);
     if (ret < 0) {
       Logger()->error("Could not open output file {}", _path.string());
-      return;
+      return false;
     }
   } else {
     Logger()->critical("Context does not have a file output", _path.string());
-    return;
+    return false;
   }
 
   Logger()->debug("Write header");
   ret = avformat_write_header(output_fc, nullptr);
   if (ret < 0) {
     Logger()->critical("Could not write header to file {}", _path.string());
-    return;
+    return false;
   }
 
   AVPacket* packet = av_packet_alloc();
@@ -238,6 +238,7 @@ void Muxer::transmux(std::string_view output) {
 
   Logger()->debug("Write trailer");
   av_write_trailer(output_fc);
+  return true;
 }
 
 void Muxer::setTag(const int id, std::string value) {

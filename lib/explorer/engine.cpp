@@ -24,6 +24,7 @@
 #include "explorer/engine.hpp"
 
 #include <algorithm>
+#include <cmath>
 #include <filesystem>
 #include <mutex>
 #include <numeric>
@@ -413,9 +414,17 @@ int Engine::apply(const Prediction& pred) const {
   }
 
   if (muxer) {
-    muxer->transmux(pred.output);
+    if (muxer->transmux(pred.output)) {
+      std::filesystem::remove(pred.input.getPath());
+    }
   } else {
-    std::filesystem::rename(pred.input.getPath(), pred.output);
+    try {
+      std::filesystem::rename(pred.input.getPath(), pred.output);
+    } catch (const std::exception& e) {
+      Logger()->error("Error renaming file {} to {}",
+                      pred.input.getPath().string(), pred.output);
+      throw e;
+    }
   }
   return 0;
 }

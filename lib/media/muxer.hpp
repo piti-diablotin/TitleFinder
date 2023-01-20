@@ -39,7 +39,7 @@ public:
    */
   virtual ~Muxer() override = default;
 
-  void transmux(std::string_view output);
+  bool transmux(std::string_view output);
 
   void setTag(int id, std::string value);
 
