@@ -25,9 +25,11 @@
 
 #include <algorithm>
 #include <filesystem>
+#include <mutex>
 #include <numeric>
 #include <regex>
 #include <stdexcept>
+#include <thread>
 
 #include "api/authentication.hpp"
 #include "api/optionals.hpp"
@@ -421,16 +423,29 @@ int Engine::apply(const Prediction& pred) const {
 void Engine::autoRename(std::queue<std::filesystem::path>& queue,
                         Media::FileInfo::Container container, int njobs,
                         const std::filesystem::path& outputDirectory) const {
-  while (!queue.empty()) {
-    auto file(std::move(queue.front()));
-    try {
-      queue.pop();
-      auto pred = this->predictFile(file.string(), container, outputDirectory);
-      Logger()->info("{} => {}", pred.input.getPath().string(), pred.output);
-      this->apply(pred);
-    } catch (const std::exception& e) {
-      Logger()->error("File {} failed with: {}", file.string(), e.what());
-    }
+  std::mutex queue_mutex;
+  std::vector<std::thread> workers;
+  for (int i = 0; i < njobs; ++i) {
+    workers.push_back(std::thread([&] {
+      while (!queue.empty()) {
+        std::unique_lock lLock(queue_mutex);
+        auto file(std::move(queue.front()));
+        queue.pop();
+        lLock.unlock();
+        try {
+          auto pred =
+              this->predictFile(file.string(), container, outputDirectory);
+          Logger()->info("{} => {}", pred.input.getPath().string(),
+                         pred.output);
+          this->apply(pred);
+        } catch (const std::exception& e) {
+          Logger()->error("File {} failed with: {}", file.string(), e.what());
+        }
+      }
+    }));
+  }
+  for (auto& t : workers) {
+    t.join();
   }
 }
 
