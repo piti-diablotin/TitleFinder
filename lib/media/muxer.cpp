@@ -52,7 +52,7 @@ Muxer::Muxer(const FileInfo& input)
 void Muxer::transmux(std::string_view output) {
   _path = output;
   _path.replace_extension(_extension);
-  Logger()->info("Transmuxing {} {} to {}", _format, _input.getPath().string(),
+  Logger()->info("{} transmuxing {} to {}", _format, _input.getPath().string(),
                  _path.string());
 
   if (!_input.isOpen()) {

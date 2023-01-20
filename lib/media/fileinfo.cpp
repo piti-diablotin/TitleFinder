@@ -51,7 +51,7 @@ FileInfo::FileInfo(const std::string_view fileuri) : File(fileuri) {
   }
   Logger()->debug("{}: {}", _path.string(), fc->iformat->name);
   std::string_view demuxer{fc->iformat->name};
-  if (demuxer.find("mastroska") != std::string_view::npos) {
+  if (demuxer.find("matroska") != std::string_view::npos) {
     _container = Container::Mkv;
   } else if (demuxer.find("mp4") != std::string_view::npos) {
     _container = Container::Mp4;

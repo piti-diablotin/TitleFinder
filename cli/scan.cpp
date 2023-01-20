@@ -35,7 +35,7 @@ Scan::Scan(int argc, char* argv[]) : Rename(argc, argv) {
 }
 
 void Scan::setOptionalOptions() {
-  _parser.setOption("interactiverun", 'i',
+  _parser.setOption("interactive", 'i',
                     "Ask to confirm before applying modifications.");
   _parser.setOption("jobs", 'j', "1",
                     "Number of jobs working at the same time (only in none "
@@ -58,11 +58,11 @@ int Scan::run() {
   }
 
   auto list = _engine.listFiles(_filename, _parser.isSetOption("recursive"));
-  fmt::print("Will analyze {} files", list.size());
+  fmt::print("Will analyze {} files in {}\n", list.size(), _filename);
   if (_parser.isSetOption("interactive")) {
     while (!list.empty()) {
+      auto& file = list.front();
       try {
-        auto file = list.front();
         auto pred = _engine.predictFile(file, _container, _outputDirectory);
         this->print(pred);
         const std::string_view yes("y");
@@ -78,6 +78,7 @@ int Scan::run() {
       } catch (const std::exception& e) {
         fmt::print(std::cerr, "Exception occured: {}", e.what());
       }
+      list.pop();
     }
   } else {
     int jobs = 1;

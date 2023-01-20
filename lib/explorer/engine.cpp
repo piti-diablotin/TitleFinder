@@ -57,7 +57,16 @@
 
 namespace {
 std::regex searchCleaner(R"([\._-]*)");
-}
+bool mkdir(const std::filesystem::path& p) {
+  TitleFinder::Explorer::Logger()->trace("mkir {}", p.string());
+  if (!std::filesystem::exists(p)) {
+    if (!mkdir(p.parent_path()))
+      return false;
+    return std::filesystem::create_directory(p);
+  }
+  return true;
+};
+} // namespace
 
 namespace TitleFinder {
 
@@ -229,7 +238,7 @@ Engine::predictFile(std::string file, Media::FileInfo::Container container,
         std::string newTest(info.getTag("title"_tagid).data());
         if (newTest.empty())
           throw e;
-        Logger()->debug("Searching for movie now with title {}", title);
+        Logger()->debug("Searching for movie now with title {}", newTest);
         return makeMovie(newTest, &info);
       } catch (const std::exception& e) {
         Logger()->error("No tag title");
@@ -259,9 +268,10 @@ Engine::predictFile(std::string file, Media::FileInfo::Container container,
                            });
     Logger()->debug("Episode title is {}", ep->name);
 
-    pred.output = fmt::format("{}.S{:02d}E{:02d}.{}{}", pred.tvshow->name,
-                              ep->season_number, ep->episode_number, ep->name,
-                              pred.input.getPath().extension().string());
+    pred.output =
+        fmt::format("{0}/{0}.S{1:02d}/{0}.S{1:02d}E{2:02d}.{3}{4}",
+                    pred.tvshow->name, ep->season_number, ep->episode_number,
+                    ep->name, pred.input.getPath().extension().string());
     std::replace(pred.output.begin(), pred.output.end(), ' ',
                  _spaceReplacement);
 
@@ -308,7 +318,7 @@ Engine::listFiles(const std::filesystem::path& directory,
     if (!entry.is_regular_file())
       return false;
     const std::string extension = entry.path().extension().string();
-    if (extension != "mp4" && extension != "mkv" && extension != "avi")
+    if (extension != ".mp4" && extension != ".mkv" && extension != ".avi")
       return false;
     return true;
   };
@@ -336,20 +346,21 @@ int Engine::apply(const Prediction& pred) const {
   auto container = pred.container;
   if (pred.input.getPath() == std::filesystem::path(pred.output))
     Logger()->info("Not transmuxing, tags cannot be set.");
-  else if (container == Media::FileInfo::Container::Other)
+  else if (container == Media::FileInfo::Container::Other) {
     container = pred.input.getContainer();
+  }
 
   switch (container) {
   case Media::FileInfo::Container::Mkv:
-    Logger()->info("Transmuxing to mkv");
+    Logger()->trace("Transmuxing to mkv");
     muxer = new Media::MkvMuxer(pred.input);
     break;
   case Media::FileInfo::Container::Mp4:
-    Logger()->info("Transmuxing to mp4");
+    Logger()->trace("Transmuxing to mp4");
     muxer = new Media::Mp4Muxer(pred.input);
     break;
   default:
-    Logger()->info("Only renaming file.");
+    Logger()->trace("Only renaming file.");
     break;
   }
 
@@ -390,6 +401,13 @@ int Engine::apply(const Prediction& pred) const {
       genres.pop_back();
       muxer->setTag("genre"_tagid, genres);
     }
+  }
+
+  std::filesystem::path destinationDirectory{pred.output};
+  if (!mkdir(destinationDirectory.parent_path())) {
+    throw std::runtime_error(
+        fmt::format("Creation of path {} failed.",
+                    destinationDirectory.parent_path().string()));
   }
 
   if (muxer) {

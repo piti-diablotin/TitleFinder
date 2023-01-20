@@ -141,6 +141,7 @@ int Rename::run() {
 void Rename::print(const Explorer::Engine::Prediction& prediction) {
   // prediction.input.dumpInfo();
   if (prediction.movie) {
+    fmt::print("Input file => {}\n", prediction.input.getPath().string());
     fmt::print("{} ({})\n", prediction.movie->title,
                prediction.movie->release_date);
     fmt::print("{}\n", prediction.movie->overview);
