@@ -29,20 +29,26 @@ namespace TitleFinder {
 
 namespace Cli {
 
-Search::Search(int argc, char* argv[])
-    : Application(argc, argv), _query(argv[argc - 1]) {
-  _parser.setBinaryName("titlefinder search");
+Search::Search(int argc, char* argv[]) : SubApp(argc, argv), _query() {
+  _parser.setBinaryName(TITLEFINDER_NAME " search");
   _parser.setOption("type", 't', "movie", "Type of research",
                     {"movie", "tvshow"});
   _parser.setOption("season", 's', "", "Season number");
   _parser.setOption("seasons", 'S', "Print all seasons");
+  try {
+    _parser.parse();
+  } catch (const std::exception& e) {
+    std::cerr << e.what();
+  }
+  if (argc - 1 >= 0)
+    _query = argv[argc - 1];
 }
 
 int Search::run() {
+  if (_columns > 120)
+    _columns = 120;
 
   try {
-    _parser.parse();
-
     if (_parser.isSetOption("help")) {
       std::cout << _parser << std::endl;
       return 0;

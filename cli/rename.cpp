@@ -36,14 +36,15 @@ namespace TitleFinder {
 namespace Cli {
 
 Rename::Rename(int argc, char* argv[])
-    : Application(argc, argv), _filename(argv[argc - 1]), _outputDirectory(),
+    : SubApp(argc, argv), _filename(argv[argc - 1]), _outputDirectory(),
       _container(Media::FileInfo::Container::Other), _engine() {
-  _parser.setBinaryName("titlefinder_cli rename");
+  _parser.setBinaryName(TITLEFINDER_NAME " rename");
   _parser.setOption("muxer", 'm', "", "Output container", {"mkv", "mp4"});
   _parser.setOption("output-directory", 'o', "",
                     "Output directory to rename/remux the file.");
   _parser.setOption("blacklist", 'b', "", "Blacklist file containing filters");
-  this->setOptionalOptions();
+  if (argc - 1 >= 0)
+    _filename = argv[argc - 1];
 }
 
 void Rename::setOptionalOptions() {
@@ -52,12 +53,13 @@ void Rename::setOptionalOptions() {
 }
 
 int Rename::prepare() {
+  this->setOptionalOptions();
   try {
     _parser.parse();
 
     if (_parser.isSetOption("help")) {
       std::cout << _parser << std::endl;
-      return 0;
+      return 1;
     }
 
     _outputDirectory = std::filesystem::absolute(_filename).parent_path();
@@ -102,12 +104,12 @@ int Rename::readyEngine() {
 
 int Rename::run() {
 
-  if (!std::filesystem::is_regular_file(_filename)) {
-    fmt::print(std::cerr, "{} is not a regular file.\n", _filename);
+  if (this->prepare()) {
     return 1;
   }
 
-  if (this->prepare()) {
+  if (!std::filesystem::is_regular_file(_filename)) {
+    fmt::print(std::cerr, "{} is not a regular file.\n", _filename);
     return 1;
   }
 
@@ -122,9 +124,16 @@ int Rename::run() {
     if (_parser.isSetOption("dry-run"))
       return 0;
 
-    return _engine.apply(prediction);
+    try {
+      return _engine.apply(prediction);
+    } catch (const std::exception& e) {
+      fmt::print(std::cerr, "Failed to apply prediction on file {}: {}\n",
+                 _filename, e.what());
+      return 1;
+    }
   } catch (const std::exception& e) {
-    fmt::print(std::cerr, "Failed to predict file {}\n", _filename);
+    fmt::print(std::cerr, "Failed to predict file {}: {}\n", _filename,
+               e.what());
     return 1;
   }
 }

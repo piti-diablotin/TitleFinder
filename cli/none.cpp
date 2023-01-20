@@ -1,5 +1,5 @@
 /**
- * @file cli/Application.cpp
+ * @file cli/none.cpp
  *
  * @brief
  *
@@ -21,23 +21,40 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "application.hpp"
-#ifdef HAVE_IOCTL
-#  include <sys/ioctl.h>
-#endif
+#include "none.hpp"
+#include <fmt/format.h>
+#include <iostream>
+
+namespace {
+std::string getVersion() {
+  return fmt::format("{} version {}", TITLEFINDER_NAME, TITLEFINDER_VERSION);
+}
+} // namespace
 
 namespace TitleFinder {
 
 namespace Cli {
 
-Application::Application(int argc, char* argv[])
-    : _parser(argc, argv), _columns(80) {
-#ifdef HAVE_IOCTL
-  winsize w;
-  ioctl(0, TIOCGWINSZ, &w);
-  _columns = w.ws_col;
-#endif
-  _parser.setOption("help", 'h', "Print this message");
+None::None(int argc, char* argv[]) : Application(argc, argv) {
+  _parser.setOption("version", 'v', "Print help message");
+  _parser.setBinaryName(TITLEFINDER_NAME " (search|rename|scan)");
+}
+
+int None::run() {
+  try {
+    _parser.parse();
+  } catch (const std::exception& e) {
+    std::cerr << "Exception occured: " << e.what() << std::endl;
+    return 1;
+  }
+
+  if (_parser.isSetOption("help")) {
+    std::cout << _parser << std::endl;
+  }
+  if (_parser.isSetOption("version")) {
+    std::cout << getVersion() << std::endl;
+  }
+  return 0;
 }
 
 } // namespace Cli

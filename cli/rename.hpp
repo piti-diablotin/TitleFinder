@@ -23,7 +23,7 @@
 
 #pragma once
 
-#include "application.hpp"
+#include "subapp.hpp"
 
 #include <string>
 
@@ -33,7 +33,7 @@ namespace TitleFinder {
 
 namespace Cli {
 
-class Rename : public Application {
+class Rename : public SubApp {
 
 public:
   /**

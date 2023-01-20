@@ -31,7 +31,7 @@ namespace TitleFinder {
 namespace Cli {
 
 Scan::Scan(int argc, char* argv[]) : Rename(argc, argv) {
-  _parser.setBinaryName("titlefinder_cli scan");
+  _parser.setBinaryName(TITLEFINDER_NAME " scan");
 }
 
 void Scan::setOptionalOptions() {
@@ -44,12 +44,12 @@ void Scan::setOptionalOptions() {
 }
 
 int Scan::run() {
-  if (!std::filesystem::is_directory(_filename)) {
-    fmt::print(std::cerr, "{} is not a directory.\n", _filename);
+  if (this->prepare()) {
     return 1;
   }
 
-  if (this->prepare()) {
+  if (!std::filesystem::is_directory(_filename)) {
+    fmt::print(std::cerr, "{} is not a directory.\n", _filename);
     return 1;
   }
 

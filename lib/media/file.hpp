@@ -68,6 +68,8 @@ public:
 
   virtual const std::string_view getTag(int id) const;
 
+  virtual Container getContainer() const;
+
   virtual void dumpInfo() const;
 
   inline virtual bool isOpen() const { return _formatCtxt != nullptr; }

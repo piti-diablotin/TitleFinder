@@ -1,5 +1,5 @@
 project(
-  TitleFinder_cli
+  titlefinder_cli
   VERSION 0.2.0
   LANGUAGES CXX
   )
@@ -11,9 +11,11 @@ add_executable(titlefinder_cli
   titlefinder_cli.cpp
   parser.cpp
   application.cpp
+  none.cpp
   rename.cpp
   scan.cpp
   search.cpp
+  subapp.cpp
   )
 
 target_link_libraries(titlefinder_cli

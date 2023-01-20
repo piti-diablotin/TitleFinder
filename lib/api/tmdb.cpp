@@ -63,6 +63,7 @@ Tmdb::Tmdb(const std::string& apiKey)
 Tmdb::~Tmdb() {}
 
 json Tmdb::post(const std::string_view url, const json& data) {
+  Logger()->debug("Sending post to {}", url);
   auto req = _curl.post(addApiKey(url, _apiKey), data);
   req.wait();
   auto j = req.get();
@@ -71,6 +72,7 @@ json Tmdb::post(const std::string_view url, const json& data) {
 }
 
 json Tmdb::get(const std::string_view url) {
+  Logger()->debug("Sending get to {}", url);
   auto req = _curl.get(addApiKey(url, _apiKey));
   req.wait();
   auto j = req.get();
@@ -79,6 +81,7 @@ json Tmdb::get(const std::string_view url) {
 }
 
 json Tmdb::del(const std::string_view url, const json& data) {
+  Logger()->debug("Sending delete to {}", url);
   auto req = _curl.del(addApiKey(url, _apiKey), data);
   req.wait();
   auto j = req.get();

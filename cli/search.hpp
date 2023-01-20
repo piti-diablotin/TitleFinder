@@ -23,13 +23,13 @@
 
 #pragma once
 
-#include "application.hpp"
+#include "subapp.hpp"
 
 namespace TitleFinder {
 
 namespace Cli {
 
-class Search final : public Application {
+class Search final : public SubApp {
 public:
   /**
    * Empty constructor

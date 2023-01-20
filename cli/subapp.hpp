@@ -1,5 +1,5 @@
 /**
- * @file cli/Application.cpp
+ * @file cli/subapp.hpp
  *
  * @brief
  *
@@ -21,24 +21,27 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#pragma once
+
 #include "application.hpp"
-#ifdef HAVE_IOCTL
-#  include <sys/ioctl.h>
-#endif
 
 namespace TitleFinder {
 
 namespace Cli {
 
-Application::Application(int argc, char* argv[])
-    : _parser(argc, argv), _columns(80) {
-#ifdef HAVE_IOCTL
-  winsize w;
-  ioctl(0, TIOCGWINSZ, &w);
-  _columns = w.ws_col;
-#endif
-  _parser.setOption("help", 'h', "Print this message");
-}
+class SubApp : public Application {
+
+public:
+  /**
+   * Empty constructor
+   */
+  SubApp(int argc, char* argv[]);
+
+  /**
+   * Destructor
+   */
+  ~SubApp() override = default;
+};
 
 } // namespace Cli
 

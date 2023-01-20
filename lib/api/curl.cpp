@@ -84,7 +84,6 @@ void Curl::cleanUp() {
 std::future<json> Curl::post(const std::string_view url, const json& data) {
   std::string fullUrl = fmt::format("{}{}", _baseUrl, url);
 
-  Logger()->debug("Sending post to {}", fullUrl);
   if (!_curl)
     throw std::runtime_error("Bad curl instance");
 
@@ -123,7 +122,6 @@ std::future<json> Curl::post(const std::string_view url, const json& data) {
 std::future<json> Curl::get(const std::string_view url) {
   std::string fullUrl = fmt::format("{}{}", _baseUrl, url);
 
-  Logger()->debug("Sending get to {}", fullUrl);
   if (!_curl)
     throw std::runtime_error("Bad curl instance");
 
@@ -160,7 +158,6 @@ std::future<json> Curl::get(const std::string_view url) {
 std::future<json> Curl::del(const std::string_view url, const json& data) {
   std::string fullUrl = fmt::format("{}{}", _baseUrl, url);
 
-  Logger()->debug("Sending delete to {}", fullUrl);
   if (!_curl)
     throw std::runtime_error("Bad curl instance");
 

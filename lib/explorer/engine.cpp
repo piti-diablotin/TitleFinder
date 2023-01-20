@@ -155,9 +155,7 @@ const Engine::Prediction
 Engine::predictFile(std::string file, Media::FileInfo::Container container,
                     const std::filesystem::path& outputDirectory) const {
 
-  Media::FileInfo info(file);
-
-  if (!std::filesystem::exists(info.getPath()))
+  if (!std::filesystem::exists(file))
     throw std::runtime_error("File {} does not exist.");
 
   if (!std::filesystem::is_directory(outputDirectory)) {
@@ -165,8 +163,9 @@ Engine::predictFile(std::string file, Media::FileInfo::Container container,
         "Output directory {} is not a directory", outputDirectory.string()));
   }
 
+  std::string original_file{file};
   if (_filter) {
-    file = _filter->filter(info.getPath());
+    file = _filter->filter(file);
     Logger()->debug("File after filtering is {}", file);
   }
 
@@ -179,8 +178,9 @@ Engine::predictFile(std::string file, Media::FileInfo::Container container,
   std::regex_replace(title, searchCleaner, " ",
                      std::regex_constants::match_any);
 
-  auto makeMovie = [this, &info, &discri, &outputDirectory,
-                    container](const std::string& title) -> Engine::Prediction {
+  auto makeMovie = [this, &original_file, &discri, &outputDirectory, container](
+                       const std::string& title,
+                       Media::FileInfo* info = nullptr) -> Engine::Prediction {
     Api::optionalInt year;
     if (discri.getYear() != -1) {
       year = discri.getYear();
@@ -188,7 +188,8 @@ Engine::predictFile(std::string file, Media::FileInfo::Container container,
     auto rep = this->searchMovie(title, year);
     if (rep->total_results == 0)
       throw std::logic_error("No match found");
-    Prediction pred(std::move(info));
+    Prediction pred(info == nullptr ? Media::FileInfo{original_file}
+                                    : std::move(*info));
     Api::MovieInfoCompact* tmp =
         new Api::MovieInfoCompact(std::move(rep->results[0]));
     pred.movie.reset(tmp);
@@ -224,11 +225,12 @@ Engine::predictFile(std::string file, Media::FileInfo::Container container,
     } catch (const std::exception& e) {
       using namespace Media::Tag;
       try {
+        Media::FileInfo info{original_file};
         std::string newTest(info.getTag("title"_tagid).data());
         if (newTest.empty())
           throw e;
         Logger()->debug("Searching for movie now with title {}", title);
-        return makeMovie(newTest);
+        return makeMovie(newTest, &info);
       } catch (const std::exception& e) {
         Logger()->error("No tag title");
         throw e;
@@ -239,7 +241,7 @@ Engine::predictFile(std::string file, Media::FileInfo::Container container,
     auto rep = this->searchTvShow(title);
     if (rep->total_results == 0)
       throw std::logic_error("No match found");
-    Prediction pred(std::move(info));
+    Prediction pred(Media::FileInfo{original_file});
     Api::TvShowInfoCompact* tmp =
         new Api::TvShowInfoCompact(std::move(rep->results[0]));
     pred.tvshow.reset(tmp);
@@ -282,9 +284,10 @@ Engine::predictFile(std::string file, Media::FileInfo::Container container,
   } else {
     Logger()->debug("Looking for a title tag (assuming movie)");
     using namespace Media::Tag;
+    Media::FileInfo info{original_file};
     std::string newTest(info.getTag("title"_tagid).data());
     if (!newTest.empty())
-      return makeMovie(newTest);
+      return makeMovie(newTest, &info);
     throw std::logic_error("Unable to predict file");
   }
 
@@ -330,8 +333,13 @@ int Engine::apply(const Prediction& pred) const {
   using namespace Media::Tag;
 
   Media::Muxer* muxer = nullptr;
-  ;
-  switch (pred.container) {
+  auto container = pred.container;
+  if (pred.input.getPath() == std::filesystem::path(pred.output))
+    Logger()->info("Not transmuxing, tags cannot be set.");
+  else if (container == Media::FileInfo::Container::Other)
+    container = pred.input.getContainer();
+
+  switch (container) {
   case Media::FileInfo::Container::Mkv:
     Logger()->info("Transmuxing to mkv");
     muxer = new Media::MkvMuxer(pred.input);
@@ -341,7 +349,8 @@ int Engine::apply(const Prediction& pred) const {
     muxer = new Media::Mp4Muxer(pred.input);
     break;
   default:
-    Logger()->info("No transmuxing, tags cannot be set.");
+    Logger()->info("Only renaming file.");
+    break;
   }
 
   if (muxer && pred.movie) {

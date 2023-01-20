@@ -22,6 +22,7 @@
  */
 
 #include "media/file.hpp"
+#include <filesystem>
 #include <string_view>
 #include <vector>
 
@@ -38,23 +39,22 @@ namespace TitleFinder {
 namespace Media {
 
 File::File(std::string_view fileuri)
-    : _path(fileuri), _languages(), _subtitles(), _videoCodec(VCodec::Other),
+    : _path(fileuri.empty() ? ""
+                            : std::filesystem::canonical(
+                                  std::filesystem::absolute(fileuri))),
+      _languages(), _subtitles(), _videoCodec(VCodec::Other),
       _audioCodec(ACodec::Other),
       _container(Container::Other), _formatCtxt{nullptr,
                                                 [](AVFormatContext* ctxt) {
-                                                  if (ctxt != nullptr) {
-                                                    Logger()->debug(
-                                                        "Free AVFormatContext");
-                                                    avformat_close_input(&ctxt);
-                                                    avformat_free_context(ctxt);
-                                                  }
+                                                  Logger()->debug(
+                                                      "Free AVFormatContext");
+                                                  avformat_close_input(&ctxt);
+                                                  avformat_free_context(ctxt);
                                                 }},
       _codecCtxt{nullptr,
                  [](AVCodecContext* ctxt) {
-                   if (ctxt != nullptr) {
-                     Logger()->debug("Free AVCodecContext");
-                     avcodec_free_context(&ctxt);
-                   }
+                   Logger()->debug("Free AVCodecContext");
+                   avcodec_free_context(&ctxt);
                  }},
       _tags() {}
 
@@ -70,12 +70,14 @@ std::filesystem::path File::getPath() const { return _path; }
 
 const std::string_view File::getTag(const int id) const { return _tags.at(id); }
 
+File::Container File::getContainer() const { return _container; }
+
 void File::dumpInfo() const {
   if (!_formatCtxt) {
     Logger()->warn("Format context not allocated for {}.", _path.string());
     return;
   }
-  Logger()->info("{}: {}", _path.string(),
+  Logger()->info("{}: {}", _path.filename().string(),
                  _formatCtxt->iformat ? _formatCtxt->iformat->name
                                       : _formatCtxt->oformat->name);
   if (!_tags.empty()) {
