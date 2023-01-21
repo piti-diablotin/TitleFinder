@@ -25,6 +25,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdlib>
 #include <filesystem>
 #include <mutex>
 #include <numeric>
@@ -77,7 +78,25 @@ namespace Explorer {
 
 Engine::Engine()
     : _tmdb{nullptr}, _language{}, _moviesGenres{},
-      _tvShowsGenres{}, _filter{nullptr}, _spaceReplacement('.') {}
+      _tvShowsGenres{}, _filter{nullptr}, _spaceReplacement('.') {
+  char* test = nullptr;
+  test = ::getenv("LC_MESSAGES");
+  if (test == nullptr) {
+    test = ::getenv("LANGUAGE");
+    if (test == nullptr) {
+      test = ::getenv("LANG");
+    }
+  }
+  if (test) {
+    const std::regex re("[a-z]{2}_[A-Z]{2}");
+    std::cmatch m;
+    if (std::regex_search(test, m, re)) {
+      std::string match(m[0].str());
+      match.replace(2, 1, "-");
+      this->setLanguage(match);
+    }
+  }
+}
 
 void Engine::setTmdbKey(const std::string& key) {
   _tmdb = Api::Tmdb::create(key);
@@ -107,7 +126,7 @@ void Engine::setLanguage(const std::string& language) {
   const std::regex checkLang("([a-z]{2})-([A-Z]{2})");
   std::smatch m;
   if (std::regex_match(language, m, checkLang)) {
-    Logger()->info("Set langue to {} country {}", m[1].str(), m[2].str());
+    Logger()->info("Set language to {} country {}", m[1].str(), m[2].str());
     _language = language;
   } else {
     Logger()->warn("Language format {} not recognized", language);

@@ -75,7 +75,9 @@ int Search::run() {
     std::cerr << "You need to provide an API key" << std::endl;
     return 1;
   }
-  engine.setLanguage(_parser.getOption<std::string>("language"));
+  if (_parser.isSetOption("language")) {
+    engine.setLanguage(_parser.getOption<std::string>("language"));
+  }
 
   std::string type = _parser.getOption<std::string>("type");
   if (type == "movie") {

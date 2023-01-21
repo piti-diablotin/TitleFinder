@@ -94,7 +94,9 @@ int Rename::readyEngine() {
     std::cerr << "You need to provide an API key" << std::endl;
     return 1;
   }
-  _engine.setLanguage(_parser.getOption<std::string>("language"));
+  if (_parser.isSetOption("language")) {
+    _engine.setLanguage(_parser.getOption<std::string>("language"));
+  }
 
   if (_parser.isSetOption("blacklist")) {
     _engine.setBlacklist(_parser.getOption<std::string>("blacklist"));
