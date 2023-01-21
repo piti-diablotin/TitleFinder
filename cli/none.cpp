@@ -22,7 +22,10 @@
  */
 
 #include "none.hpp"
+#include "explorer/versions.hpp"
+
 #include <fmt/format.h>
+#include <fmt/ostream.h>
 #include <iostream>
 
 namespace {
@@ -44,7 +47,7 @@ int None::run() {
   try {
     _parser.parse();
   } catch (const std::exception& e) {
-    std::cerr << "Exception occured: " << e.what() << std::endl;
+    fmt::print(std::cerr, "Exception occured: {}\n", e.what());
     return 1;
   }
 
@@ -52,7 +55,8 @@ int None::run() {
     std::cout << _parser << std::endl;
   }
   if (_parser.isSetOption("version")) {
-    std::cout << getVersion() << std::endl;
+    fmt::print(std::cout, "{}\n", TitleFinder::Explorer::all_versions());
+    fmt::print(std::cout, "{}\n", getVersion());
   }
   return 0;
 }
