@@ -1,32 +1,11 @@
-add_library(logger
-  logger.cpp
+set(LOGGER_SOURCES
+  ${CMAKE_CURRENT_SOURCE_DIR}/logger.cpp
   )
 
-add_library(titlefinder::logger ALIAS logger)
+set(LOGGER_SOURCES "${LOGGER_SOURCES}" PARENT_SCOPE)
 
-target_include_directories(logger
-  PUBLIC
-  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
-  $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/titlefinder>
+set(LOGGER_HEADERS
+  ${CMAKE_CURRENT_SOURCE_DIR}/logger.hpp
   )
 
-target_link_libraries(logger
-  PUBLIC
-  spdlog::spdlog
-  )
-
-set(LOGGER_INCLUDES_PUBLIC
-  logger.hpp
-  )
-
-set_target_properties(logger PROPERTIES PUBLIC_HEADER
-  "${LOGGER_INCLUDES_PUBLIC}"
-  )
-
-install(
-  TARGETS logger 
-  EXPORT titlefinderTargets
-  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-  PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/titlefinder
-  )
+set(LOGGER_HEADERS "${LOGGER_HEADERS}" PARENT_SCOPE)

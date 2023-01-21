@@ -1,57 +1,28 @@
-find_package(CURL REQUIRED)
-find_package(nlohmann_json REQUIRED)
+set(API_SOURCES
+  ${CMAKE_CURRENT_SOURCE_DIR}/authentication.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/curl.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/genres.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/logger.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/search.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/tmdb.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/tv.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/tvseasons.cpp
+  )
+set(API_SOURCES "${API_SOURCES}" PARENT_SCOPE)
 
-add_library(api
-  authentication.cpp
-  curl.cpp
-  genres.cpp
-  logger.cpp
-  search.cpp
-  tmdb.cpp
-  tv.cpp
-  tvseasons.cpp
+set(API_HEADERS
+  ${CMAKE_CURRENT_SOURCE_DIR}/authentication.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/curl.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/exception.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/genres.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/logger.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/optionals.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/response.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/search.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/structs.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/tmdb.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/tv.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/tvseasons.hpp
   )
 
-add_library(titlefinder::api ALIAS api)
-
-target_include_directories(api
-  PUBLIC
-  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
-  $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/titlefinder>
-  )
-
-target_link_libraries(api
-  PUBLIC
-  nlohmann_json::nlohmann_json
-  PRIVATE
-  titlefinder::logger
-  CURL::libcurl
-  fmt::fmt
-  )
-
-set(API_INCLUDES_PUBLIC
-  authentication.hpp
-  curl.hpp
-  exception.hpp
-  genres.hpp
-  logger.hpp
-  optionals.hpp
-  response.hpp
-  search.hpp
-  structs.hpp
-  tmdb.hpp
-  tv.hpp
-  tvseasons.hpp
-  )
-
-set_target_properties(api PROPERTIES PUBLIC_HEADER
-  "${API_INCLUDES_PUBLIC}"
-  )
-
-install(
-  TARGETS api
-  EXPORT titlefinderTargets
-  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-  PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/titlefinder
-  )
+set(API_HEADERS "${API_HEADERS}" PARENT_SCOPE)

@@ -41,9 +41,6 @@ endif()
 
 set(CMKAE_BUILD_SHARED ON CACHE BOOL "Enable shared libraries")
 
-find_package(spdlog REQUIRED)
-find_package(fmt REQUIRED)
-
 add_subdirectory(lib)
 add_subdirectory(cli)
 
