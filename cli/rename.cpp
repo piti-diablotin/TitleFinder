@@ -91,9 +91,10 @@ int Rename::readyEngine() {
     std::string key = _parser.getOption<std::string>("api_key");
     _engine.setTmdbKey(key);
   } catch (const std::exception& e) {
-    std::cerr << "You need to provide an API key" << std::endl;
+    fmt::print(std::cerr, "Exception occured: {}\n", e.what());
     return 1;
   }
+
   if (_parser.isSetOption("language")) {
     _engine.setLanguage(_parser.getOption<std::string>("language"));
   }

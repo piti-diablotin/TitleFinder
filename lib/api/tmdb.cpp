@@ -58,7 +58,11 @@ std::shared_ptr<Tmdb> Tmdb::create(const std::string& apiKey) {
 Tmdb::Tmdb(const std::string& apiKey)
     : _apiKey(apiKey), _token(), _tokenExpires(), _sessionId(),
       _sessionExpires(std::chrono::system_clock::now()),
-      _curl("https://api.themoviedb.org/3") {}
+      _curl("https://api.themoviedb.org/3") {
+  if (apiKey.empty()) {
+    _apiKey = API_KEY;
+  }
+}
 
 Tmdb::~Tmdb() {}
 
@@ -88,6 +92,8 @@ json Tmdb::del(const std::string_view url, const json& data) {
   Logger()->trace("{}:\n{}", __FUNCTION__, j.dump(2));
   return j;
 }
+
+void Tmdb::setApiKey(const std::string& apiKey) { _apiKey = apiKey; }
 
 void Tmdb::setSession(const std::string& id,
                       [[maybe_unused]] const std::string& expires) {

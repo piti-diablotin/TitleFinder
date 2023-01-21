@@ -22,8 +22,11 @@
  */
 
 #include "search.hpp"
-#include "explorer/engine.hpp"
+
+#include <fmt/ostream.h>
 #include <iostream>
+
+#include "explorer/engine.hpp"
 
 namespace TitleFinder {
 
@@ -48,6 +51,7 @@ int Search::run() {
   if (_columns > 120)
     _columns = 120;
 
+  Explorer::Engine engine;
   try {
     if (_parser.isSetOption("help")) {
       std::cout << _parser << std::endl;
@@ -63,81 +67,80 @@ int Search::run() {
     if (_parser.isSetOption("season")) {
       _parser.getOption<int>("season");
     }
-  } catch (const std::exception& e) {
-    std::cerr << e.what() << std::endl;
-    return 1;
-  }
-  Explorer::Engine engine;
-  try {
     std::string key = _parser.getOption<std::string>("api_key");
     engine.setTmdbKey(key);
   } catch (const std::exception& e) {
-    std::cerr << "You need to provide an API key" << std::endl;
+    fmt::print(std::cerr, "Exception occured: {}\n", e.what());
     return 1;
   }
+
   if (_parser.isSetOption("language")) {
     engine.setLanguage(_parser.getOption<std::string>("language"));
   }
 
   std::string type = _parser.getOption<std::string>("type");
-  if (type == "movie") {
-    auto result = engine.searchMovie(_query);
-    if (result->total_results == 0) {
-      std::cout << "No match found." << std::endl;
-      return 1;
-    }
-    std::cout << fmt::format("|{: ^{}s}|{: ^4s}|{: ^6s}|", "Title",
-                             _columns - 14, "Year", "Rating")
-              << std::endl;
-    for (auto& f : result->results) {
-      std::cout << fmt::format("|{: <{}s}|{: ^4s}|{: >5.0f}%|", f.title,
-                               _columns - 14, f.release_date.substr(0, 4),
-                               f.vote_average * 10)
-                << std::endl;
-    }
-  } else {
-    auto result = engine.searchTvShow(_query);
-    if (result->total_results == 0) {
-      std::cout << "No match found." << std::endl;
-      return -1;
-    }
-    if (!_parser.isSetOption("seasons") && !_parser.isSetOption("season")) {
-      std::cout << fmt::format("|{: ^{}s}|{: ^4s}|{: ^6s}|", "Name",
+  try {
+    if (type == "movie") {
+      auto result = engine.searchMovie(_query);
+      if (result->total_results == 0) {
+        std::cout << "No match found." << std::endl;
+        return 1;
+      }
+      std::cout << fmt::format("|{: ^{}s}|{: ^4s}|{: ^6s}|", "Title",
                                _columns - 14, "Year", "Rating")
                 << std::endl;
       for (auto& f : result->results) {
-        std::cout << fmt::format("|{: <{}s}|{: >4s}|{: >5.0f}%|", f.name,
-                                 _columns - 14, f.first_air_date.substr(0, 4),
+        std::cout << fmt::format("|{: <{}s}|{: ^4s}|{: >5.0f}%|", f.title,
+                                 _columns - 14, f.release_date.substr(0, 4),
                                  f.vote_average * 10)
                   << std::endl;
       }
     } else {
-      auto showId = result->results.front().id;
-      auto details = engine.getTvShowDetails(showId);
-      auto info = fmt::format("{} ({} seasons)", details->name,
-                              details->number_of_seasons);
-      std::cout << fmt::format("|{: ^{}s}|{: ^10s}|{: ^6s}|", info,
-                               _columns - 20, "Date", "Rating")
-                << std::endl;
-      int only = -1;
-      if (_parser.isSetOption("season"))
-        only = _parser.getOption<int>("season");
-      for (int si = 1; si <= details->number_of_seasons; ++si) {
-        if (only > 0 && si != only)
-          continue;
-        auto season = engine.getSeasonDetails(showId, si);
-        std::cout << fmt::format("|{: ^{}s}|{: ^10s}|{: ^6s}|", season->name,
-                                 _columns - 20, season->air_date, "")
+      auto result = engine.searchTvShow(_query);
+      if (result->total_results == 0) {
+        std::cout << "No match found." << std::endl;
+        return -1;
+      }
+      if (!_parser.isSetOption("seasons") && !_parser.isSetOption("season")) {
+        std::cout << fmt::format("|{: ^{}s}|{: ^4s}|{: ^6s}|", "Name",
+                                 _columns - 14, "Year", "Rating")
                   << std::endl;
-        for (auto& ep : season->episodes) {
-          std::cout << fmt::format(
-                           "|{: >2d}x{:0>2d} {: <{}s}|{: ^10s}|{: >5.0f}%|",
-                           ep.season_number, ep.episode_number, ep.name,
-                           _columns - 26, ep.air_date, ep.vote_average * 10)
+        for (auto& f : result->results) {
+          std::cout << fmt::format("|{: <{}s}|{: >4s}|{: >5.0f}%|", f.name,
+                                   _columns - 14, f.first_air_date.substr(0, 4),
+                                   f.vote_average * 10)
                     << std::endl;
+        }
+      } else {
+        auto showId = result->results.front().id;
+        auto details = engine.getTvShowDetails(showId);
+        auto info = fmt::format("{} ({} seasons)", details->name,
+                                details->number_of_seasons);
+        std::cout << fmt::format("|{: ^{}s}|{: ^10s}|{: ^6s}|", info,
+                                 _columns - 20, "Date", "Rating")
+                  << std::endl;
+        int only = -1;
+        if (_parser.isSetOption("season"))
+          only = _parser.getOption<int>("season");
+        for (int si = 1; si <= details->number_of_seasons; ++si) {
+          if (only > 0 && si != only)
+            continue;
+          auto season = engine.getSeasonDetails(showId, si);
+          std::cout << fmt::format("|{: ^{}s}|{: ^10s}|{: ^6s}|", season->name,
+                                   _columns - 20, season->air_date, "")
+                    << std::endl;
+          for (auto& ep : season->episodes) {
+            std::cout << fmt::format(
+                             "|{: >2d}x{:0>2d} {: <{}s}|{: ^10s}|{: >5.0f}%|",
+                             ep.season_number, ep.episode_number, ep.name,
+                             _columns - 26, ep.air_date, ep.vote_average * 10)
+                      << std::endl;
+          }
         }
       }
     }
+  } catch (const std::exception& e) {
+    fmt::print(std::cerr, "Exception occured: {}", e.what());
   }
   return 0;
 }

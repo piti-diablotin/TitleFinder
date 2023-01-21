@@ -53,6 +53,8 @@ public:
   [[nodiscard]] nlohmann::json del(std::string_view url,
                                    const nlohmann::json& data);
 
+  void setApiKey(const std::string& apiKey);
+
   void setSession(const std::string& id, const std::string& expires);
 
   void setToken(const std::string& req, const std::string& expires);

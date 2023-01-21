@@ -28,7 +28,7 @@ namespace TitleFinder {
 namespace Cli {
 
 SubApp::SubApp(int argc, char* argv[]) : Application(argc, argv) {
-  _parser.setOption("api_key", 'k', "API_KEY", "Api key for TheMovieDB");
+  _parser.setOption("api_key", 'k', "", "Api key for TheMovieDB");
   _parser.setOption("language", 'l', "en-US",
                     "ISO-639-1 language code (e.g. fr-FR)");
 }

@@ -77,7 +77,7 @@ namespace TitleFinder {
 namespace Explorer {
 
 Engine::Engine()
-    : _tmdb{nullptr}, _language{}, _moviesGenres{},
+    : _tmdb{Api::Tmdb::create("")}, _language{}, _moviesGenres{},
       _tvShowsGenres{}, _filter{nullptr}, _spaceReplacement('.') {
   char* test = nullptr;
   test = ::getenv("LC_MESSAGES");
@@ -99,7 +99,9 @@ Engine::Engine()
 }
 
 void Engine::setTmdbKey(const std::string& key) {
-  _tmdb = Api::Tmdb::create(key);
+  if (!key.empty()) {
+    _tmdb->setApiKey(key);
+  }
   Api::Authentication auth(_tmdb);
   auto rep = auth.createRequestToken();
   if (rep->getCode() != 200)

@@ -39,6 +39,7 @@ if (CMAKE_BUILD_TYPE STREQUAL "Debug")
 endif()
 
 set(CMKAE_BUILD_SHARED ON CACHE BOOL "Enable shared libraries")
+set(API_KEY "" CACHE STRING "TMDB API key;")
 
 
 find_package(fmt REQUIRED)
@@ -94,6 +95,7 @@ target_compile_definitions(titlefinder
   TITLEFINDER_VERSION_PATCH=${PROJECT_VERSION_PATCH}
   TITLEFINDER_NAME="${PROJECT_NAME}"
   $<$<BOOL:ioctl_FOUND>:HAVE_IOCTL>
+  $<BUILD_INTERFACE:API_KEY="${API_KEY}">
   )
 
 target_include_directories(titlefinder
