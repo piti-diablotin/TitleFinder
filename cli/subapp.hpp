@@ -24,6 +24,7 @@
 #pragma once
 
 #include "application.hpp"
+#include "explorer/engine.hpp"
 
 namespace TitleFinder {
 
@@ -41,6 +42,11 @@ public:
    * Destructor
    */
   ~SubApp() override = default;
+
+protected:
+  virtual int readyEngine();
+
+  Explorer::Engine _engine;
 };
 
 } // namespace Cli

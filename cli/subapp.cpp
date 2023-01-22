@@ -23,14 +23,32 @@
 
 #include "subapp.hpp"
 
+#include <fmt/ostream.h>
+#include <iostream>
+
 namespace TitleFinder {
 
 namespace Cli {
 
-SubApp::SubApp(int argc, char* argv[]) : Application(argc, argv) {
+SubApp::SubApp(int argc, char* argv[]) : Application(argc, argv), _engine() {
   _parser.setOption("api_key", 'k', "", "Api key for TheMovieDB");
   _parser.setOption("language", 'l', "en-US",
                     "ISO-639-1 language code (e.g. fr-FR)");
+}
+
+int SubApp::readyEngine() {
+  try {
+    std::string key = _parser.getOption<std::string>("api_key");
+    _engine.setTmdbKey(key);
+  } catch (const std::exception& e) {
+    fmt::print(std::cerr, "Exception occured: {}\n", e.what());
+    return 1;
+  }
+
+  if (_parser.isSetOption("language")) {
+    _engine.setLanguage(_parser.getOption<std::string>("language"));
+  }
+  return 0;
 }
 
 } // namespace Cli

@@ -37,7 +37,7 @@ namespace Cli {
 
 Rename::Rename(int argc, char* argv[])
     : SubApp(argc, argv), _filename(argv[argc - 1]), _outputDirectory(),
-      _container(Media::FileInfo::Container::Other), _engine() {
+      _container(Media::FileInfo::Container::Other) {
   _parser.setBinaryName(TITLEFINDER_NAME " rename");
   _parser.setOption("muxer", 'm', "", "Output container", {"mkv", "mp4"});
   _parser.setOption("output-directory", 'o', "",
@@ -87,21 +87,16 @@ int Rename::prepare() {
 }
 
 int Rename::readyEngine() {
-  try {
-    std::string key = _parser.getOption<std::string>("api_key");
-    _engine.setTmdbKey(key);
-  } catch (const std::exception& e) {
-    fmt::print(std::cerr, "Exception occured: {}\n", e.what());
-    return 1;
-  }
 
-  if (_parser.isSetOption("language")) {
-    _engine.setLanguage(_parser.getOption<std::string>("language"));
-  }
+  if (SubApp::readyEngine())
+    return 1;
 
   if (_parser.isSetOption("blacklist")) {
     _engine.setBlacklist(_parser.getOption<std::string>("blacklist"));
   }
+
+  _engine.loadGenresTv();
+  _engine.loadGenresMovie();
   return 0;
 }
 

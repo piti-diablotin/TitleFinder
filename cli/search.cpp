@@ -51,7 +51,6 @@ int Search::run() {
   if (_columns > 120)
     _columns = 120;
 
-  Explorer::Engine engine;
   try {
     if (_parser.isSetOption("help")) {
       std::cout << _parser << std::endl;
@@ -67,21 +66,17 @@ int Search::run() {
     if (_parser.isSetOption("season")) {
       _parser.getOption<int>("season");
     }
-    std::string key = _parser.getOption<std::string>("api_key");
-    engine.setTmdbKey(key);
   } catch (const std::exception& e) {
     fmt::print(std::cerr, "Exception occured: {}\n", e.what());
     return 1;
   }
 
-  if (_parser.isSetOption("language")) {
-    engine.setLanguage(_parser.getOption<std::string>("language"));
-  }
+  SubApp::readyEngine();
 
   std::string type = _parser.getOption<std::string>("type");
   try {
     if (type == "movie") {
-      auto result = engine.searchMovie(_query);
+      auto result = _engine.searchMovie(_query);
       if (result->total_results == 0) {
         std::cout << "No match found." << std::endl;
         return 1;
@@ -96,7 +91,7 @@ int Search::run() {
                   << std::endl;
       }
     } else {
-      auto result = engine.searchTvShow(_query);
+      auto result = _engine.searchTvShow(_query);
       if (result->total_results == 0) {
         std::cout << "No match found." << std::endl;
         return -1;
@@ -113,7 +108,7 @@ int Search::run() {
         }
       } else {
         auto showId = result->results.front().id;
-        auto details = engine.getTvShowDetails(showId);
+        auto details = _engine.getTvShowDetails(showId);
         auto info = fmt::format("{} ({} seasons)", details->name,
                                 details->number_of_seasons);
         std::cout << fmt::format("|{: ^{}s}|{: ^10s}|{: ^6s}|", info,
@@ -125,7 +120,7 @@ int Search::run() {
         for (int si = 1; si <= details->number_of_seasons; ++si) {
           if (only > 0 && si != only)
             continue;
-          auto season = engine.getSeasonDetails(showId, si);
+          auto season = _engine.getSeasonDetails(showId, si);
           std::cout << fmt::format("|{: ^{}s}|{: ^10s}|{: ^6s}|", season->name,
                                    _columns - 20, season->air_date, "")
                     << std::endl;

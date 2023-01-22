@@ -27,8 +27,6 @@
 
 #include <string>
 
-#include "explorer/engine.hpp"
-
 namespace TitleFinder {
 
 namespace Cli {
@@ -50,14 +48,13 @@ public:
 
 protected:
   virtual int prepare();
-  virtual int readyEngine();
+  int readyEngine() override;
   virtual void print(const Explorer::Engine::Prediction& prediction);
   virtual void setOptionalOptions();
 
   std::string _filename;
   std::filesystem::path _outputDirectory;
   Media::FileInfo::Container _container;
-  Explorer::Engine _engine;
 };
 
 } // namespace Cli
