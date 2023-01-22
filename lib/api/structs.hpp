@@ -35,6 +35,15 @@ namespace Api {
   if (json__.contains(#option__) && !json__[#option__].is_null())              \
     option__ = json__.value(#option__, option__);
 
+struct BaseJson {
+  BaseJson() : _json() {}
+  virtual ~BaseJson() = default;
+  const nlohmann::json& json() const { return _json; }
+
+protected:
+  nlohmann::json _json;
+};
+
 struct SearchInfo {
   std::string poster_path{};
   std::string overview{};
@@ -96,7 +105,7 @@ struct TvShowInfoCompact : SearchInfo {
   ~TvShowInfoCompact() override = default;
 };
 
-struct TvShowInfo : TvShowInfoCompact {
+struct TvShowInfo : TvShowInfoCompact, BaseJson {
   std::vector<int> episode_run_time{};
   std::map<int, std::string> genres{};
   std::string homepage{};
@@ -108,7 +117,7 @@ struct TvShowInfo : TvShowInfoCompact {
   std::string status{"Unknown"};
   std::string tagline{};
   std::string type{};
-  inline void from_json(const nlohmann::json& j) {
+  inline void from_json(nlohmann::json& j) {
     TvShowInfoCompact::from_json(j);
     if (j.contains("episode_run_time")) {
       j["episode_run_time"].get_to(episode_run_time);
@@ -135,11 +144,12 @@ struct TvShowInfo : TvShowInfoCompact {
     fillOption(j, status);
     fillOption(j, tagline);
     fillOption(j, type);
+    _json = std::move(j);
   }
   ~TvShowInfo() override = default;
 };
 
-struct Episode {
+struct Episode : BaseJson {
   std::string air_date{"0000-00-00"};
   int episode_number{-1};
   int id{-1};
@@ -162,8 +172,9 @@ struct Episode {
     fillOption(j, still_path);
     fillOption(j, vote_average);
     fillOption(j, vote_count);
+    _json = j;
   }
-  virtual ~Episode() = default;
+  ~Episode() override = default;
 };
 
 } // namespace Api

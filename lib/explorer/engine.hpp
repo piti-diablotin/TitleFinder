@@ -23,6 +23,7 @@
 
 #pragma once
 
+#include <cmath>
 #include <filesystem>
 #include <memory>
 #include <queue>
@@ -73,6 +74,9 @@ public:
 
   void setTmdbKey(const std::string& key);
 
+  void loadGenresTv();
+
+  void loadGenresMovie();
   /**
    * language should follow ISO 639-1 like fr-FR
    */
@@ -104,12 +108,15 @@ public:
                   Media::FileInfo::Container container, int njobs,
                   const std::filesystem::path& outputDirectory) const;
 
+  void setCacheDirectory(const std::filesystem::path& dir);
+
 private:
   std::shared_ptr<Api::Tmdb> _tmdb;
   Api::optionalString _language;
   Api::Genres::GenresList _moviesGenres;
   Api::Genres::GenresList _tvShowsGenres;
   std::unique_ptr<NameFilter> _filter;
+  std::filesystem::path _cacheDirectory;
   char _spaceReplacement;
 };
 

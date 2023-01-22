@@ -38,12 +38,12 @@ namespace Api {
 class Genres {
 
 public:
-  class GenresList : public Response {
+  class GenresList : public Response, public BaseJson {
   public:
     std::map<int, std::string> genres;
     GenresList();
     ~GenresList() = default;
-    inline void from_json(const nlohmann::json& j) {
+    inline void from_json(nlohmann::json& j) {
       if (j.contains("genres") && j["genres"].is_array()) {
         auto& g = j["genres"];
         for (size_t i = 0; i < g.size(); ++i) {
@@ -52,6 +52,7 @@ public:
               std::make_pair(gg.value("id", -1), gg.value("name", "Unknown")));
         }
       }
+      _json = std::move(j);
     }
   };
 

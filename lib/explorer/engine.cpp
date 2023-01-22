@@ -24,13 +24,18 @@
 #include "explorer/engine.hpp"
 
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <cstdlib>
+#include <exception>
 #include <filesystem>
+#include <fstream>
 #include <mutex>
+#include <nlohmann/json.hpp>
 #include <numeric>
 #include <regex>
 #include <stdexcept>
+#include <string_view>
 #include <thread>
 
 #include "api/authentication.hpp"
@@ -59,8 +64,11 @@
         fmt::format("Unable to cast {} to {}", #rep__, #type__));              \
   }
 
+using json = nlohmann::json;
+
 namespace {
 std::regex searchCleaner(R"([\._-]*)");
+
 bool mkdir(const std::filesystem::path& p) {
   TitleFinder::Explorer::Logger()->trace("mkir {}", p.string());
   if (!std::filesystem::exists(p)) {
@@ -70,6 +78,21 @@ bool mkdir(const std::filesystem::path& p) {
   }
   return true;
 };
+constexpr std::string_view kTvDir = "tv";
+constexpr std::string_view kTvSeasonsDir = "tvseasons";
+constexpr std::string_view kGenresDir = "genres";
+constexpr std::string_view kGenresTv = "tvlist.json";
+constexpr std::string_view kGenresMovie = "movielist.json";
+
+inline bool validCacheFile(const std::filesystem::path& p) {
+  if (!std::filesystem::exists(p)) {
+    return false;
+  }
+  auto now = std::chrono::system_clock::now().time_since_epoch();
+  auto write = std::filesystem::last_write_time(p).time_since_epoch();
+  return std::chrono::duration_cast<std::chrono::hours>(now - write) >
+         std::chrono::hours(24 * 7);
+}
 } // namespace
 
 namespace TitleFinder {
@@ -78,7 +101,8 @@ namespace Explorer {
 
 Engine::Engine()
     : _tmdb{Api::Tmdb::create("")}, _language{}, _moviesGenres{},
-      _tvShowsGenres{}, _filter{nullptr}, _spaceReplacement('.') {
+      _tvShowsGenres{}, _filter{nullptr}, _cacheDirectory(),
+      _spaceReplacement('.') {
   char* test = nullptr;
   test = ::getenv("LC_MESSAGES");
   if (test == nullptr) {
@@ -96,6 +120,18 @@ Engine::Engine()
       this->setLanguage(match);
     }
   }
+#ifdef __linux__
+  test = getenv("HOME");
+  if (test) {
+    _cacheDirectory = std::filesystem::path(test) / ".cache/" TITLEFINDER_NAME;
+    if (!mkdir(_cacheDirectory)) {
+      Logger()->debug("creation of {} failed", _cacheDirectory.string());
+      _cacheDirectory.clear();
+    } else {
+      Logger()->debug("Cache directory: {}", _cacheDirectory.string());
+    }
+  }
+#endif
 }
 
 void Engine::setTmdbKey(const std::string& key) {
@@ -104,23 +140,87 @@ void Engine::setTmdbKey(const std::string& key) {
   }
   Api::Authentication auth(_tmdb);
   auto rep = auth.createRequestToken();
-  if (rep->getCode() != 200)
-    _tmdb.reset();
   CAST_REPONSE(rep, Api::Authentication::RequestToken, token);
+}
+
+void Engine::loadGenresTv() {
+  const std::filesystem::path cache = _cacheDirectory / kGenresDir / kGenresTv;
+  if (validCacheFile(cache)) {
+    Logger()->debug("Loading tv genres from {}", cache.string());
+    // load from cache
+    std::ifstream file(cache, std::ios::in);
+    if (file.is_open()) {
+      try {
+        json j = json::parse(file);
+        file.close();
+        _tvShowsGenres.from_json(j);
+        return;
+      } catch (const std::exception& e) {
+        Logger()->error("Failed to load tv genres cache file with: {} ",
+                        e.what());
+      }
+    }
+  }
+  if (!_tmdb)
+    throw std::runtime_error("You need to set an API key first");
+  Api::Genres genres(_tmdb);
+  try {
+    auto gr = genres.getTvList(_language);
+    CAST_REPONSE(gr, Api::Genres::GenresList, sgenre);
+    _tvShowsGenres = std::move(*sgenre);
+    try {
+      mkdir(cache.parent_path());
+      std::ofstream file(cache, std::ios::out);
+      if (file.is_open()) {
+        file << _tvShowsGenres.json().dump();
+        file.close();
+      }
+    } catch (const std::exception& e) {
+      Logger()->warn("Unable to cache TV shows genres");
+    }
+  } catch (const std::exception& e) {
+    Logger()->warn("Unable to retrieve genres for TV shows.");
+  }
+}
+
+void Engine::loadGenresMovie() {
+  const std::filesystem::path cache =
+      _cacheDirectory / kGenresDir / kGenresMovie;
+  if (validCacheFile(cache)) {
+    Logger()->debug("Loading movie genres from {}", cache.string());
+    // load from cache
+    std::ifstream file(cache, std::ios::in);
+    if (file.is_open()) {
+      try {
+        json j = json::parse(file);
+        file.close();
+        _moviesGenres.from_json(j);
+        return;
+      } catch (const std::exception& e) {
+        Logger()->error("Failed to load movie genres cache file with: {} ",
+                        e.what());
+      }
+    }
+  }
+  if (!_tmdb)
+    throw std::runtime_error("You need to set an API key first");
   Api::Genres genres(_tmdb);
   try {
     auto gr = genres.getMovieList(_language);
     CAST_REPONSE(gr, Api::Genres::GenresList, mgenre);
     _moviesGenres = std::move(*mgenre);
+    try {
+      mkdir(cache.parent_path());
+      std::ofstream file(cache, std::ios::out);
+      if (file.is_open()) {
+        file << _moviesGenres.json().dump();
+        file.close();
+      }
+    } catch (const std::exception& e) {
+      Logger()->warn("Unable to cache Movie genres");
+    }
   } catch (const std::exception& e) {
     Logger()->warn("Unable to retrieve genres for movies.");
-  }
-  try {
-    auto gr = genres.getTvList(_language);
-    CAST_REPONSE(gr, Api::Genres::GenresList, sgenre);
-    _tvShowsGenres = std::move(*sgenre);
-  } catch (const std::exception& e) {
-    Logger()->warn("Unable to retrieve genres for TV shows.");
   }
 }
 
@@ -164,23 +264,81 @@ Engine::searchTvShow(const std::string& searchString,
 }
 
 std::unique_ptr<Api::Tv::Details> Engine::getTvShowDetails(int id) const {
+  const std::filesystem::path cache =
+      _cacheDirectory / kTvDir / fmt::format("{}.json", id);
+  if (validCacheFile(cache)) {
+    Logger()->debug("Loading TV show details from {}", cache.string());
+    // load from cache
+    std::ifstream file(cache, std::ios::in);
+    if (file.is_open()) {
+      try {
+        json j = json::parse(file);
+        file.close();
+        auto s = std::make_unique<Api::Tv::Details>();
+        s->from_json(j);
+        return s;
+      } catch (const std::exception& e) {
+        Logger()->error("Failed to load TV show cache file with: {} ",
+                        e.what());
+      }
+    }
+  }
   if (!_tmdb)
     throw std::runtime_error("You need to set an API key first");
   Api::Tv show(_tmdb);
   auto rep = show.getDetails(id, _language);
   CAST_REPONSE(rep, Api::Tv::Details, s);
   (void)rep.release();
+  try {
+    mkdir(cache.parent_path());
+    std::ofstream file(cache, std::ios::out);
+    if (file.is_open()) {
+      file << s->json().dump();
+      file.close();
+    }
+  } catch (const std::exception& e) {
+    Logger()->warn("Unable to cache TV show details");
+  }
   return std::unique_ptr<Api::Tv::Details>(s);
 }
 
 std::unique_ptr<Api::TvSeasons::Details>
 Engine::getSeasonDetails(int id, int season) const {
+  const std::filesystem::path cache =
+      _cacheDirectory / kTvSeasonsDir / fmt::format("{}_{}.json", id, season);
+  if (validCacheFile(cache)) {
+    Logger()->debug("Loading TV season details from {}", cache.string());
+    // load from cache
+    std::ifstream file(cache, std::ios::in);
+    if (file.is_open()) {
+      try {
+        json j = json::parse(file);
+        file.close();
+        auto s = std::make_unique<Api::TvSeasons::Details>();
+        s->from_json(j);
+        return s;
+      } catch (const std::exception& e) {
+        Logger()->error("Failed to load TV season cache file with: {} ",
+                        e.what());
+      }
+    }
+  }
   if (!_tmdb)
     throw std::runtime_error("You need to set an API key first");
   Api::TvSeasons tvseasons(_tmdb);
   auto rep = tvseasons.getDetails(id, season, _language);
   CAST_REPONSE(rep, Api::TvSeasons::Details, s);
   (void)rep.release();
+  try {
+    mkdir(cache.parent_path());
+    std::ofstream file(cache, std::ios::out);
+    if (file.is_open()) {
+      file << s->json().dump();
+      file.close();
+    }
+  } catch (const std::exception& e) {
+    Logger()->warn("Unable to cache TV season details");
+  }
   return std::unique_ptr<Api::TvSeasons::Details>(s);
 }
 
@@ -282,9 +440,7 @@ Engine::predictFile(std::string file, Media::FileInfo::Container container,
     Api::TvSeasons season(_tmdb);
     Logger()->debug("Looking for season {} and episode {}", discri.getSeason(),
                     discri.getEpisode());
-    auto seasonInfo =
-        season.getDetails(pred.tvshow->id, discri.getSeason(), _language);
-    CAST_REPONSE(seasonInfo, Api::TvSeasons::Details, details);
+    auto details = this->getSeasonDetails(pred.tvshow->id, discri.getSeason());
 
     auto ep = std::find_if(details->episodes.begin(), details->episodes.end(),
                            [discri](const Api::Episode& ep) {

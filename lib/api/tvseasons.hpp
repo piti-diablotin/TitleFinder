@@ -37,7 +37,7 @@ namespace Api {
 class TvSeasons {
 
 public:
-  class Details : public Response {
+  class Details : public Response, public BaseJson {
   public:
     std::string _id;
     std::string air_date;
@@ -49,7 +49,7 @@ public:
     int season_number;
     Details();
     ~Details() = default;
-    inline void from_json(const nlohmann::json& j) {
+    inline void from_json(nlohmann::json& j) {
       fillOption(j, _id);
       fillOption(j, air_date);
       fillOption(j, name);
@@ -65,6 +65,7 @@ public:
           ep.from_json(data);
         }
       }
+      _json = std::move(j);
     }
   };
 
