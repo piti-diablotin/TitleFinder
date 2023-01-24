@@ -40,6 +40,7 @@ endif()
 
 set(CMKAE_BUILD_SHARED ON CACHE BOOL "Enable shared libraries")
 set(API_KEY "" CACHE STRING "TMDB API key;")
+set(USE_HEADER_ONLY OFF CACHE BOOL "Use fmt and spdlog header only libs")
 
 
 find_package(fmt REQUIRED)
@@ -59,7 +60,6 @@ find_path(AVUTIL_INCLUDE_DIR libavutil/avutil.h)
 find_library(AVUTIL_LIBRARY avutil)
 
 # For logger
-find_package(spdlog REQUIRED)
 find_package(spdlog REQUIRED)
 
 add_subdirectory(api)
@@ -94,14 +94,18 @@ target_compile_definitions(titlefinder
   TITLEFINDER_VERSION_MINOR=${PROJECT_VERSION_MINOR}
   TITLEFINDER_VERSION_PATCH=${PROJECT_VERSION_PATCH}
   TITLEFINDER_NAME="${PROJECT_NAME}"
-  $<$<BOOL:ioctl_FOUND>:HAVE_IOCTL>
   $<BUILD_INTERFACE:API_KEY="${API_KEY}">
+  $<$<BOOL:${USE_HEADER_ONLY}>:FMT_HEADER_ONLY>
   )
 
 target_include_directories(titlefinder
   PUBLIC
   $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
   $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/titlefinder>
+  PRIVATE
+  ${AVUTIL_INCLUDE_DIR}
+  ${AVCODEC_INCLUDE_DIR}
+  ${AVFORMAT_INCLUDE_DIR}
   )
 
 target_link_libraries(titlefinder
@@ -110,13 +114,13 @@ target_link_libraries(titlefinder
   PRIVATE
   #api
   CURL::libcurl
-  fmt::fmt
+  $<$<NOT:$<BOOL:${USE_HEADER_ONLY}>>:fmt::fmt>
   #media
   ${AVUTIL_LIBRARY}
   ${AVCODEC_LIBRARY}
   ${AVFORMAT_LIBRARY}
   #logger
-  spdlog::spdlog
+  $<IF:$<BOOL:${USE_HEADER_ONLY}>,spdlog::spdlog_header_only,spdlog::spdlog>
   )
 
 set_target_properties(titlefinder PROPERTIES PUBLIC_HEADER

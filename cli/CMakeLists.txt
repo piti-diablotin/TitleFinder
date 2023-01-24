@@ -38,7 +38,7 @@ if (CMAKE_BUILD_TYPE STREQUAL "Debug")
   endif()
 endif()
 
-set(CMKAE_BUILD_SHARED ON CACHE BOOL "Enable shared libraries")
+set(USE_HEADER_ONLY OFF CACHE BOOL "Use fmt and spdlog header only libs")
 
 find_package(fmt REQUIRED)
 
@@ -59,7 +59,7 @@ add_executable(titlefinder_cli
 target_link_libraries(titlefinder_cli
   PRIVATE
   titlefinder::titlefinder
-  fmt::fmt
+  $<$<NOT:$<BOOL:${USE_HEADER_ONLY}>>:fmt::fmt>
   )
 
 target_compile_definitions(titlefinder_cli
@@ -69,7 +69,8 @@ target_compile_definitions(titlefinder_cli
   TITLEFINDER_VERSION_MINOR=${PROJECT_VERSION_MINOR}
   TITLEFINDER_VERSION_PATCH=${PROJECT_VERSION_PATCH}
   TITLEFINDER_NAME="${PROJECT_NAME}"
-  $<$<BOOL:ioctl_FOUND>:HAVE_IOCTL>
+  $<$<BOOL:${ioctl_FOUND}>:HAVE_IOCTL>
+  $<$<BOOL:${USE_HEADER_ONLY}>:FMT_HEADER_ONLY>
   )
 
 include(GNUInstallDirs)
