@@ -22,7 +22,9 @@
  */
 
 #include "logger/logger.hpp"
+#include <cstdlib>
 #include <memory>
+#include <spdlog/common.h>
 #include <spdlog/logger.h>
 #include <spdlog/spdlog.h>
 #include <string_view>
@@ -35,7 +37,6 @@
 #    endif
 #  endif
 #endif
-#include "spdlog/cfg/env.h"
 #include "spdlog/sinks/ansicolor_sink.h"
 #include "spdlog/sinks/basic_file_sink.h"
 #ifdef __GNUC__
@@ -71,7 +72,25 @@ std::shared_ptr<spdlog::logger> buildLogger(const std::string& name) {
 #endif
   std::shared_ptr<spdlog::logger> logger{log};
   spdlog::register_logger(logger);
-  spdlog::cfg::load_env_levels();
+
+  char* level = ::getenv("TITLEFINDER_LEVEL");
+  if (level) {
+    if (::strcmp(level, "trace") == 0) {
+      log->set_level(spdlog::level::trace);
+    } else if (::strcmp(level, "debug") == 0) {
+      log->set_level(spdlog::level::debug);
+    } else if (::strcmp(level, "info") == 0) {
+      log->set_level(spdlog::level::info);
+    } else if (::strcmp(level, "warn") == 0) {
+      log->set_level(spdlog::level::warn);
+    } else if (::strcmp(level, "error") == 0) {
+      log->set_level(spdlog::level::err);
+    } else if (::strcmp(level, "critical") == 0) {
+      log->set_level(spdlog::level::critical);
+    } else
+      log->warn("Level {} not recognized", level);
+  }
+
   log->debug("Logger level to {}", log->level());
   return logger;
 }
