@@ -1,4 +1,5 @@
-FROM ubuntu:latest as build
+ARG RELEASE=latest
+FROM ubuntu:$RELEASE as build
 
 USER root
 
@@ -11,12 +12,12 @@ WORKDIR /tmp
 RUN git clone https://github.com/piti-diablotin/TitleFinder.git
 
 WORKDIR ./TitleFinder
-RUN cmake -S . -B build -DCMAKE_BUILD_TYPE=Release && cmake --build build
+RUN cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DUSE_HEADER_ONLY=ON && cmake --build build -j $(nproc --all)
 
-FROM ubuntu:latest as main
+FROM ubuntu:$RELEASE as main
 
 ENV DEBIAN_FRONTEND=noninteractive
-RUN apt update && apt install libspdlog1 libcurl4 libfmt8 libavformat58 libavutil56 libavcodec58 -y && apt clean
+RUN apt update && apt install libcurl4 libavformat58 libavutil56 libavcodec58 -y && apt clean
 COPY --from=build /tmp/TitleFinder/build/cli/titlefinder_cli /usr/bin/
 
 ENTRYPOINT [ "/usr/bin/titlefinder_cli" ]
