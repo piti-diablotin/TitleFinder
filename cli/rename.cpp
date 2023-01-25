@@ -39,7 +39,8 @@ Rename::Rename(int argc, char* argv[])
     : SubApp(argc, argv), _filename(argv[argc - 1]), _outputDirectory(),
       _container(Media::FileInfo::Container::Other) {
   _parser.setBinaryName(TITLEFINDER_NAME " rename");
-  _parser.setOption("muxer", 'm', "", "Output container", {"mkv", "mp4"});
+  _parser.setOption("muxer", 'm', "", "Output container",
+                    {"mkv", "mp4", "none"});
   _parser.setOption("output-directory", 'o', "",
                     "Output directory to rename/remux the file.");
   _parser.setOption("blacklist", 'b', "", "Blacklist file containing filters");
@@ -78,6 +79,8 @@ int Rename::prepare() {
       _container = Media::FileInfo::Container::Mp4;
     else if (_parser.getOption<std::string>("muxer") == "mkv")
       _container = Media::FileInfo::Container::Mkv;
+    else if (_parser.getOption<std::string>("muxer") == "none")
+      _container = Media::FileInfo::Container::None;
 
   } catch (const std::exception& e) {
     std::cerr << e.what() << std::endl;

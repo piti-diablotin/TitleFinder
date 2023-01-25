@@ -406,6 +406,10 @@ Engine::predictFile(std::string file, Media::FileInfo::Container container,
       pred.container = Media::FileInfo::Container::Avi;
       pred.output = (outputDirectory / pred.output).replace_extension(".avi");
       break;
+    case Media::FileInfo::Container::None:
+      pred.container = Media::FileInfo::Container::None;
+      pred.output = (outputDirectory / pred.output).string();
+      break;
     default:
       pred.output = (outputDirectory / pred.output).string();
       break;
@@ -471,6 +475,10 @@ Engine::predictFile(std::string file, Media::FileInfo::Container container,
     case Media::FileInfo::Container::Avi:
       pred.container = Media::FileInfo::Container::Avi;
       pred.output = (outputDirectory / pred.output).replace_extension(".avi");
+      break;
+    case Media::FileInfo::Container::None:
+      pred.container = Media::FileInfo::Container::None;
+      pred.output = (outputDirectory / pred.output).string();
       break;
     default:
       pred.output = (outputDirectory / pred.output).string();

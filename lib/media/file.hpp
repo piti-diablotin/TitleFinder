@@ -46,7 +46,7 @@ class File {
 public:
   enum class ACodec { Mp3, Aac, Ac3, Other };
   enum class VCodec { H264, Hevc, Av1, Mpeg4, Other };
-  enum class Container { Mkv, Avi, Mp4, Other };
+  enum class Container { Mkv, Avi, Mp4, Other, None };
   using Lang = std::string;
 
   File(File&& other) = default;
