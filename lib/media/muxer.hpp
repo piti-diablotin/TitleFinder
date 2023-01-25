@@ -74,6 +74,15 @@ public:
   ~Mp4Muxer() override = default;
 };
 
+class AviMuxer : public Muxer {
+public:
+  explicit AviMuxer(const FileInfo& input) : Muxer(input) {
+    _format = "avi";
+    _extension = "avi";
+  }
+  ~AviMuxer() override = default;
+};
+
 } // namespace Media
 
 } // namespace TitleFinder

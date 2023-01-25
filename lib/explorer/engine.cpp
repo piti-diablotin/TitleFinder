@@ -402,6 +402,10 @@ Engine::predictFile(std::string file, Media::FileInfo::Container container,
       pred.container = Media::FileInfo::Container::Mp4;
       pred.output = (outputDirectory / pred.output).replace_extension(".mp4");
       break;
+    case Media::FileInfo::Container::Avi:
+      pred.container = Media::FileInfo::Container::Avi;
+      pred.output = (outputDirectory / pred.output).replace_extension(".avi");
+      break;
     default:
       pred.output = (outputDirectory / pred.output).string();
       break;
@@ -463,6 +467,10 @@ Engine::predictFile(std::string file, Media::FileInfo::Container container,
     case Media::FileInfo::Container::Mp4:
       pred.container = Media::FileInfo::Container::Mp4;
       pred.output = (outputDirectory / pred.output).replace_extension(".mp4");
+      break;
+    case Media::FileInfo::Container::Avi:
+      pred.container = Media::FileInfo::Container::Avi;
+      pred.output = (outputDirectory / pred.output).replace_extension(".avi");
       break;
     default:
       pred.output = (outputDirectory / pred.output).string();
@@ -538,6 +546,10 @@ int Engine::apply(const Prediction& pred) const {
   case Media::FileInfo::Container::Mp4:
     Logger()->trace("Transmuxing to mp4");
     muxer = new Media::Mp4Muxer(pred.input);
+    break;
+  case Media::FileInfo::Container::Avi:
+    Logger()->trace("Transmuxing to avi");
+    muxer = new Media::AviMuxer(pred.input);
     break;
   default:
     Logger()->trace("Only renaming file.");

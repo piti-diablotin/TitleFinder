@@ -176,6 +176,7 @@ bool Muxer::transmux(std::string_view output) {
     }
 
     if (params->codec_type == AVMEDIA_TYPE_AUDIO) {
+      params->frame_size = inStream->codecpar->frame_size;
       if ((params->block_align == 1 || params->block_align == 1152 ||
            params->block_align == 576) &&
           params->codec_id == AV_CODEC_ID_MP3)
@@ -218,12 +219,16 @@ bool Muxer::transmux(std::string_view output) {
     inStream = input_fc->streams[packet->stream_index];
     outStream = output_fc->streams[packet->stream_index];
     /* copy packet */
-    packet->pts =
-        av_rescale_q_rnd(packet->pts, inStream->time_base, outStream->time_base,
-                         AV_ROUND_NEAR_INF /*| AV_ROUND_PASS_MINMAX*/);
-    packet->dts =
-        av_rescale_q_rnd(packet->dts, inStream->time_base, outStream->time_base,
-                         AV_ROUND_NEAR_INF /*| AV_ROUND_PASS_MINMAX*/);
+    packet->pts = av_rescale_q_rnd(
+        packet->pts, inStream->time_base, outStream->time_base,
+        static_cast<AVRounding>(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
+    packet->dts = av_rescale_q_rnd(
+        packet->dts, inStream->time_base, outStream->time_base,
+        static_cast<AVRounding>(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
+    if (packet->pts == AV_NOPTS_VALUE && packet->dts != AV_NOPTS_VALUE)
+      packet->pts = packet->dts;
+    else if (packet->dts == AV_NOPTS_VALUE && packet->pts != AV_NOPTS_VALUE)
+      packet->dts = packet->pts;
     packet->duration = av_rescale_q(packet->duration, inStream->time_base,
                                     outStream->time_base);
     packet->pos = -1;
