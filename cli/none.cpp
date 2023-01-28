@@ -55,8 +55,8 @@ int None::run() {
     std::cout << _parser << std::endl;
   }
   if (_parser.isSetOption("version")) {
-    fmt::print(std::cout, "{}\n", TitleFinder::Explorer::all_versions());
-    fmt::print(std::cout, "{}\n", getVersion());
+    fmt::print(std::cout, "{}\n", TitleFinder::Explorer::allVersions());
+    fmt::print(std::cout, "{} ({})\n", getVersion(), __DATE__);
   }
   return 0;
 }

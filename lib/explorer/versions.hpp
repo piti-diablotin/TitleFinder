@@ -31,7 +31,9 @@ namespace Explorer {
 
 std::string_view version();
 
-std::string all_versions();
+std::string allVersions();
+
+std::string_view buildDate();
 
 } // namespace Explorer
 

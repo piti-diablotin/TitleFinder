@@ -26,6 +26,7 @@
 #include <fmt/ostream.h>
 #include <iostream>
 
+#include "api/optionals.hpp"
 #include "explorer/engine.hpp"
 
 namespace TitleFinder {
@@ -38,6 +39,7 @@ Search::Search(int argc, char* argv[]) : SubApp(argc, argv), _query() {
                     {"movie", "tvshow"});
   _parser.setOption("season", 's', "", "Season number");
   _parser.setOption("seasons", 'S', "Print all seasons");
+  _parser.setOption("year", 'y', "", "Year");
   try {
     _parser.parse();
   } catch (const std::exception& e) {
@@ -50,6 +52,8 @@ Search::Search(int argc, char* argv[]) : SubApp(argc, argv), _query() {
 int Search::run() {
   if (_columns > 120)
     _columns = 120;
+
+  Api::optionalInt year;
 
   try {
     if (_parser.isSetOption("help")) {
@@ -66,6 +70,10 @@ int Search::run() {
     if (_parser.isSetOption("season")) {
       _parser.getOption<int>("season");
     }
+
+    if (_parser.isSetOption("year")) {
+      year = _parser.getOption<int>("year");
+    }
   } catch (const std::exception& e) {
     fmt::print(std::cerr, "Exception occured: {}\n", e.what());
     return 1;
@@ -76,7 +84,7 @@ int Search::run() {
   std::string type = _parser.getOption<std::string>("type");
   try {
     if (type == "movie") {
-      auto result = _engine.searchMovie(_query);
+      auto result = _engine.searchMovie(_query, year);
       if (result->total_results == 0) {
         std::cout << "No match found." << std::endl;
         return 1;
@@ -85,13 +93,14 @@ int Search::run() {
                                _columns - 14, "Year", "Rating")
                 << std::endl;
       for (auto& f : result->results) {
-        std::cout << fmt::format("|{: <{}s}|{: ^4s}|{: >5.0f}%|", f.title,
+        std::cout << fmt::format("|{: <{}s}|{: ^4s}|{: >5.0f}%|",
+                                 f.title.substr(0, _columns - 14),
                                  _columns - 14, f.release_date.substr(0, 4),
                                  f.vote_average * 10)
                   << std::endl;
       }
     } else {
-      auto result = _engine.searchTvShow(_query);
+      auto result = _engine.searchTvShow(_query, year);
       if (result->total_results == 0) {
         std::cout << "No match found." << std::endl;
         return -1;
@@ -101,7 +110,8 @@ int Search::run() {
                                  _columns - 14, "Year", "Rating")
                   << std::endl;
         for (auto& f : result->results) {
-          std::cout << fmt::format("|{: <{}s}|{: >4s}|{: >5.0f}%|", f.name,
+          std::cout << fmt::format("|{: <{}s}|{: >4s}|{: >5.0f}%|",
+                                   f.name.substr(0, _columns - 14),
                                    _columns - 14, f.first_air_date.substr(0, 4),
                                    f.vote_average * 10)
                     << std::endl;
@@ -111,8 +121,9 @@ int Search::run() {
         auto details = _engine.getTvShowDetails(showId);
         auto info = fmt::format("{} ({} seasons)", details->name,
                                 details->number_of_seasons);
-        std::cout << fmt::format("|{: ^{}s}|{: ^10s}|{: ^6s}|", info,
-                                 _columns - 20, "Date", "Rating")
+        std::cout << fmt::format("|{: ^{}s}|{: ^10s}|{: ^6s}|",
+                                 info.substr(0, _columns - 20), _columns - 20,
+                                 "Date", "Rating")
                   << std::endl;
         int only = -1;
         if (_parser.isSetOption("season"))
@@ -121,14 +132,16 @@ int Search::run() {
           if (only > 0 && si != only)
             continue;
           auto season = _engine.getSeasonDetails(showId, si);
-          std::cout << fmt::format("|{: ^{}s}|{: ^10s}|{: ^6s}|", season->name,
+          std::cout << fmt::format("|{: ^{}s}|{: ^10s}|{: ^6s}|",
+                                   season->name.substr(0, _columns - 20),
                                    _columns - 20, season->air_date, "")
                     << std::endl;
           for (auto& ep : season->episodes) {
             std::cout << fmt::format(
                              "|{: >2d}x{:0>2d} {: <{}s}|{: ^10s}|{: >5.0f}%|",
-                             ep.season_number, ep.episode_number, ep.name,
-                             _columns - 26, ep.air_date, ep.vote_average * 10)
+                             ep.season_number, ep.episode_number,
+                             ep.name.substr(0, _columns - 26), _columns - 26,
+                             ep.air_date, ep.vote_average * 10)
                       << std::endl;
           }
         }

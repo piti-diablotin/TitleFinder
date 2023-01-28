@@ -40,14 +40,14 @@ namespace Explorer {
 
 std::string_view version() { return TITLEFINDER_VERSION; }
 
-std::string all_versions() {
+std::string allVersions() {
   return fmt::format(
       "{: <15}: {}.{}.{}\n"
       "{: <15}: {}.{}.{}\n"
       "{: <15}: {}.{}.{}\n"
       "{: <15}: {}.{}.{}\n"
       "{: <15}: {}.{}.{}\n"
-      "{: <15}: {}",
+      "{: <15}: {} ({})",
       "libavformat", AV_VERSION_MAJOR(avformat_version()),
       AV_VERSION_MINOR(avformat_version()),
       AV_VERSION_MICRO(avformat_version()), "libcodec",
@@ -57,8 +57,10 @@ std::string all_versions() {
       AV_VERSION_MICRO(avutil_version()), "spdlog", SPDLOG_VER_MAJOR,
       SPDLOG_VER_MINOR, SPDLOG_VER_PATCH, "nlohmann_json",
       NLOHMANN_JSON_VERSION_MAJOR, NLOHMANN_JSON_VERSION_MINOR,
-      NLOHMANN_JSON_VERSION_PATCH, "tilefinder", TITLEFINDER_VERSION);
+      NLOHMANN_JSON_VERSION_PATCH, "tilefinder", TITLEFINDER_VERSION, __DATE__);
 }
+
+std::string_view buildDate() { return __DATE__; }
 
 } // namespace Explorer
 
