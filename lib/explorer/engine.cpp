@@ -24,9 +24,11 @@
 #include "explorer/engine.hpp"
 
 #include <algorithm>
+#include <cctype>
 #include <chrono>
 #include <cmath>
 #include <cstdlib>
+#include <cstring>
 #include <exception>
 #include <filesystem>
 #include <fstream>
@@ -93,6 +95,27 @@ inline bool validCacheFile(const std::filesystem::path& p) {
   return std::chrono::duration_cast<std::chrono::hours>(now - write) >
          std::chrono::hours(24 * 7);
 }
+
+size_t bestMatch(std::vector<std::string>& inputs, const std::string& user) {
+  std::string copy(user);
+  for (auto& c : copy)
+    c = ::tolower(c);
+  int value = 100000;
+  size_t id = 0;
+  size_t i = 0;
+  for (auto& input : inputs) {
+    for (auto& c : input)
+      c = ::tolower(c);
+    int test = ::strcmp(input.c_str(), copy.c_str());
+    if (std::abs(test) < value) {
+      value = std::abs(test);
+      id = i;
+    }
+    ++i;
+  }
+  return id;
+}
+
 } // namespace
 
 namespace TitleFinder {
@@ -438,11 +461,19 @@ Engine::predictFile(std::string file, Media::FileInfo::Container container,
   } else if (t == Type::Show) {
     Logger()->debug("Searching for tvshow title {}", title);
     auto rep = this->searchTvShow(title);
+    size_t selected = 0;
     if (rep->total_results == 0)
       throw std::logic_error("No match found");
+    else {
+      std::vector<std::string> inputs(rep->results.size());
+      for (size_t i = 0; i < inputs.size(); ++i) {
+        inputs[i] = rep->results[i].name;
+      }
+      selected = bestMatch(inputs, title);
+    }
     Prediction pred(Media::FileInfo{original_file});
     Api::TvShowInfoCompact* tmp =
-        new Api::TvShowInfoCompact(std::move(rep->results[0]));
+        new Api::TvShowInfoCompact(std::move(rep->results[selected]));
     pred.tvshow.reset(tmp);
     Logger()->debug("TvShow title found: {}", pred.tvshow->name);
     Api::TvSeasons season(_tmdb);
@@ -454,7 +485,10 @@ Engine::predictFile(std::string file, Media::FileInfo::Container container,
                            [discri](const Api::Episode& ep) {
                              return ep.episode_number == discri.getEpisode();
                            });
-    Logger()->debug("Episode title is {}", ep->name);
+    if (ep == details->episodes.end()) {
+      Logger()->debug("No episode found");
+      throw std::logic_error("No episode found");
+    }
 
     pred.output =
         fmt::format("{0}/{0}.S{1:02d}/{0}.S{1:02d}E{2:02d}.{3}{4}",

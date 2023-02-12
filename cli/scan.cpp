@@ -76,7 +76,7 @@ int Scan::run() {
           _engine.apply(pred);
         }
       } catch (const std::exception& e) {
-        fmt::print(std::cerr, "Exception occured: {}", e.what());
+        fmt::print(std::cerr, "Error occured: {}\n", e.what());
       }
       list.pop();
     }
