@@ -23,6 +23,7 @@
 
 #include "explorer/versions.hpp"
 
+#include <curl/curl.h>
 #include <fmt/format.h>
 #include <nlohmann/json.hpp>
 #include <spdlog/version.h>
@@ -41,14 +42,17 @@ namespace Explorer {
 std::string_view version() { return TITLEFINDER_VERSION; }
 
 std::string allVersions() {
+  auto* curl_version = curl_version_info(CURLVERSION_NOW);
   return fmt::format(
+      "{: <15}: {}\n"
       "{: <15}: {}.{}.{}\n"
       "{: <15}: {}.{}.{}\n"
       "{: <15}: {}.{}.{}\n"
       "{: <15}: {}.{}.{}\n"
       "{: <15}: {}.{}.{}\n"
       "{: <15}: {} ({})",
-      "libavformat", AV_VERSION_MAJOR(avformat_version()),
+      "libcurl", curl_version->version, "libavformat",
+      AV_VERSION_MAJOR(avformat_version()),
       AV_VERSION_MINOR(avformat_version()),
       AV_VERSION_MICRO(avformat_version()), "libcodec",
       AV_VERSION_MAJOR(avcodec_version()), AV_VERSION_MINOR(avcodec_version()),

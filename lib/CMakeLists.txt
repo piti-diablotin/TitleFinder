@@ -87,6 +87,10 @@ add_library(titlefinder
 
 add_library(titlefinder::titlefinder ALIAS titlefinder)
 
+if (CURL_VERSION_STRING VERSION_GREATER_EQUAL "7.85.0")
+  target_compile_definitions(titlefinder PRIVATE CURL_7850)
+endif()
+
 target_compile_definitions(titlefinder
   PRIVATE
   TITLEFINDER_VERSION="${PROJECT_VERSION}"

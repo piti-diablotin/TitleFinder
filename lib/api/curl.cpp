@@ -66,7 +66,11 @@ Curl::Curl(const std::string& baseUrl)
   _header = curl_slist_append(_header, "charset: utf-8");
   curl_easy_setopt(_curl, CURLOPT_HTTPHEADER, _header);
   curl_easy_setopt(_curl, CURLOPT_USERAGENT, "TitleFinder");
+#ifndef CURL_7850
   curl_easy_setopt(_curl, CURLOPT_PROTOCOLS, CURLPROTO_HTTPS);
+#else
+  curl_easy_setopt(_curl, CURLOPT_PROTOCOLS_STR, "https");
+#endif
   curl_easy_setopt(_curl, CURLOPT_WRITEFUNCTION, writefunction);
 }
 
