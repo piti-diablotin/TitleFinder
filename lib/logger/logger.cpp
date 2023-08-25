@@ -38,7 +38,6 @@
 #  endif
 #endif
 #include "spdlog/sinks/ansicolor_sink.h"
-#include "spdlog/sinks/basic_file_sink.h"
 #ifdef __GNUC__
 #  if __GNUC__ >= 4
 #    if __GNUC_MINOR__ >= 6
@@ -91,7 +90,7 @@ std::shared_ptr<spdlog::logger> buildLogger(const std::string& name) {
       log->warn("Level {} not recognized", level);
   }
 
-  log->debug("Logger level to {}", log->level());
+  log->debug("Logger level to {}", static_cast<int>(log->level()));
   return logger;
 }
 } // namespace

@@ -102,10 +102,10 @@ std::future<json> Curl::post(const std::string_view url, const json& data) {
     curl_easy_setopt(_curl, CURLOPT_WRITEDATA, static_cast<void*>(&result));
     curl_easy_setopt(_curl, CURLOPT_POST, 1L);
     curl_easy_setopt(_curl, CURLOPT_POSTFIELDS, data.dump().c_str());
-    auto res = curl_easy_perform(_curl);
+    int res = curl_easy_perform(_curl);
     if (res != CURLE_OK) {
       return json::parse(fmt::format(
-          R"({ status_message: "{}", status_code: {})", errorStr, res));
+          R"({{ status_message: "{}", status_code: {}}})", errorStr, res));
     }
     try {
       return json::parse(result);
@@ -138,10 +138,10 @@ std::future<json> Curl::get(const std::string_view url) {
     curl_easy_setopt(_curl, CURLOPT_HTTPGET, 1);
     curl_easy_setopt(_curl, CURLOPT_ERRORBUFFER, errorStr);
     curl_easy_setopt(_curl, CURLOPT_WRITEDATA, static_cast<void*>(&result));
-    auto res = curl_easy_perform(_curl);
+    int res = curl_easy_perform(_curl);
     if (res != CURLE_OK) {
       return json::parse(fmt::format(
-          R"({ status_message: "{}", status_code: {})", errorStr, res));
+          R"({{ status_message: "{}", status_code: {}}})", errorStr, res));
     }
     try {
       return json::parse(result);
@@ -175,10 +175,10 @@ std::future<json> Curl::del(const std::string_view url, const json& data) {
     curl_easy_setopt(_curl, CURLOPT_ERRORBUFFER, errorStr);
     curl_easy_setopt(_curl, CURLOPT_WRITEDATA, static_cast<void*>(&result));
     curl_easy_setopt(_curl, CURLOPT_POSTFIELDS, data.dump().c_str());
-    auto res = curl_easy_perform(_curl);
+    int res = curl_easy_perform(_curl);
     if (res != CURLE_OK) {
       return json::parse(fmt::format(
-          R"({ status_message: "{}", status_code: {})", errorStr, res));
+          R"({{ status_message: "{}", status_code: {}}})", errorStr, res));
     }
     try {
       return json::parse(result);
