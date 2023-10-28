@@ -47,6 +47,7 @@
 #include "api/tmdb.hpp"
 #include "api/tv.hpp"
 #include "api/tvseasons.hpp"
+#include "explorer/levenshtein.hpp"
 #include "explorer/discriminator.hpp"
 #include "explorer/logger.hpp"
 #include "media/fileinfo.hpp"
@@ -97,18 +98,19 @@ inline bool validCacheFile(const std::filesystem::path& p) {
 }
 
 size_t bestMatch(std::vector<std::string>& inputs, const std::string& user) {
-  std::string copy(user);
-  for (auto& c : copy)
-    c = ::tolower(c);
-  int value = 100000;
+  std::string copy;
+  copy.resize(user.size());
+  std::transform(user.cbegin(),user.cend(),copy.begin(),[](unsigned char c) { return std::tolower(c); });
+
   size_t id = 0;
   size_t i = 0;
+  unsigned value = static_cast<unsigned>(-1);
   for (auto& input : inputs) {
-    for (auto& c : input)
-      c = ::tolower(c);
-    int test = ::strcmp(input.c_str(), copy.c_str());
-    if (std::abs(test) < value) {
-      value = std::abs(test);
+  std::transform(input.begin(),input.end(),input.begin(),[](unsigned char c) { return std::tolower(c); });
+
+    unsigned test = TitleFinder::Levenshtein(copy,input);
+    if (test < value) {
+      value = test;
       id = i;
     }
     ++i;
@@ -248,11 +250,19 @@ void Engine::loadGenresMovie() {
 }
 
 void Engine::setLanguage(const std::string& language) {
-  const std::regex checkLang("([a-z]{2})-([A-Z]{2})");
+  const std::regex checkLang("([a-zA-Z]{2})[-_]([a-zA-Z]{2})");
   std::smatch m;
   if (std::regex_match(language, m, checkLang)) {
+    auto lang = m[1].str();
+    std::transform(lang.cbegin(), lang.cend(),
+                   lang.begin(), 
+                   [](unsigned char c) { return std::tolower(c); });
+    auto country = m[2].str();
+    std::transform(country.cbegin(),country.cend(),
+                   country.begin(), 
+                   [](unsigned char c) { return std::toupper(c); });
     Logger()->info("Set language to {} country {}", m[1].str(), m[2].str());
-    _language = language;
+    _language = fmt::format("{}-{}",lang,country);
   } else {
     Logger()->warn("Language format {} not recognized", language);
   }

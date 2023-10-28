@@ -1,6 +1,7 @@
 set(EXPLORER_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/discriminator.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/engine.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/levenshtein.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/logger.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/namefilter.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/versions.cpp
@@ -11,6 +12,7 @@ set(EXPLORER_SOURCES "${EXPLORER_SOURCES}" PARENT_SCOPE)
 set(EXPLORER_HEADERS
   ${CMAKE_CURRENT_SOURCE_DIR}/discriminator.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/engine.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/levenshtein.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/logger.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/namefilter.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/versions.hpp
