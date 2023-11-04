@@ -174,4 +174,3 @@ public:
 template <> bool Parser::getOption(std::string_view option);
 
 template <> std::string Parser::getOption(std::string_view option);
-

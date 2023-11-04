@@ -25,31 +25,31 @@
 
 #include <algorithm>
 #include <functional>
+#include <iostream>
 #include <numeric>
 #include <string>
 #include <vector>
-#include <iostream>
 
 namespace TitleFinder {
 
 unsigned Levenshtein(const std::string& s, const std::string& t) {
-  std::vector<unsigned> v(t.size()+1,0);
-  std::vector<unsigned> w(t.size()+1,0);
+  std::vector<unsigned> v(t.size() + 1, 0);
+  std::vector<unsigned> w(t.size() + 1, 0);
 
-  std::iota(v.begin(),v.end(),0);
-  for( unsigned i =0 ; i < s.size();++i) {
-    w[0] = i+1;
+  std::iota(v.begin(), v.end(), 0);
+  for (unsigned i = 0; i < s.size(); ++i) {
+    w[0] = i + 1;
 
-    for ( unsigned j = 0 ; j < t.size(); ++j) {
-      unsigned deletionCost = v[j+1]+1;
-      unsigned insertionCost = w[j]+1;
-      unsigned substitutionCost = s[i]==t[j]? v[j]:v[j]+1;
-      w[j+1] = std::min({deletionCost,insertionCost,substitutionCost});
+    for (unsigned j = 0; j < t.size(); ++j) {
+      unsigned deletionCost = v[j + 1] + 1;
+      unsigned insertionCost = w[j] + 1;
+      unsigned substitutionCost = s[i] == t[j] ? v[j] : v[j] + 1;
+      w[j + 1] = std::min({deletionCost, insertionCost, substitutionCost});
     }
 
-    std::swap(v,w);
+    std::swap(v, w);
   }
   return v.back();
 }
 
-}
+} // namespace TitleFinder

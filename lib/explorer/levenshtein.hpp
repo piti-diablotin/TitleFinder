@@ -27,6 +27,6 @@
 
 namespace TitleFinder {
 
-unsigned Levenshtein(const std::string& s, const std::string&t);
+unsigned Levenshtein(const std::string& s, const std::string& t);
 
 }

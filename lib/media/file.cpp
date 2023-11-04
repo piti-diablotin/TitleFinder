@@ -43,14 +43,13 @@ File::File(std::string_view fileuri)
                             : std::filesystem::canonical(
                                   std::filesystem::absolute(fileuri))),
       _languages(), _subtitles(), _videoCodec(VCodec::Other),
-      _audioCodec(ACodec::Other),
-      _container(Container::Other), _formatCtxt{nullptr,
-                                                [](AVFormatContext* ctxt) {
-                                                  Logger()->debug(
-                                                      "Free AVFormatContext");
-                                                  avformat_close_input(&ctxt);
-                                                  avformat_free_context(ctxt);
-                                                }},
+      _audioCodec(ACodec::Other), _container(Container::Other),
+      _formatCtxt{nullptr,
+                  [](AVFormatContext* ctxt) {
+                    Logger()->debug("Free AVFormatContext");
+                    avformat_close_input(&ctxt);
+                    avformat_free_context(ctxt);
+                  }},
       _codecCtxt{nullptr,
                  [](AVCodecContext* ctxt) {
                    Logger()->debug("Free AVCodecContext");
