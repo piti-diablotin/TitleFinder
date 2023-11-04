@@ -64,7 +64,12 @@ int Rename::prepare() {
       return 1;
     }
 
-    _engine.useCache(_parser.getOption<bool>("cache"));
+    if (_parser.isSetOption("language") && _parser.isSetOption("cache")) {
+      std::cerr << "Langage option disables cache" << std::endl;
+      _engine.useCache(false);
+    } else {
+      _engine.useCache(_parser.getOption<bool>("cache"));
+    }
 
     _outputDirectory = std::filesystem::absolute(_filename).parent_path();
     if (_parser.isSetOption("output-directory")) {
