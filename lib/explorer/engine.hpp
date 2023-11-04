@@ -46,7 +46,6 @@ namespace TitleFinder {
 namespace Explorer {
 
 class Engine {
-
 public:
   struct Prediction {
     Media::FileInfo input;
@@ -110,6 +109,8 @@ public:
 
   void setCacheDirectory(const std::filesystem::path& dir);
 
+  void useCache(bool cache);
+
 private:
   std::shared_ptr<Api::Tmdb> _tmdb;
   Api::optionalString _language;
@@ -118,6 +119,7 @@ private:
   std::unique_ptr<NameFilter> _filter;
   std::filesystem::path _cacheDirectory;
   char _spaceReplacement;
+  bool _useCache;
 };
 
 } // namespace Explorer

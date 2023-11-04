@@ -39,11 +39,12 @@ Rename::Rename(int argc, char* argv[])
     : SubApp(argc, argv), _filename(argv[argc - 1]), _outputDirectory(),
       _container(Media::FileInfo::Container::Other) {
   _parser.setBinaryName(TITLEFINDER_NAME " rename");
-  _parser.setOption("muxer", 'm', "", "Output container",
-                    {"mkv", "mp4", "none"});
+  _parser.setOption("muxer", 'm', "none", "Output container",
+                    {"mkv", "mp4", "none", "same"});
   _parser.setOption("output-directory", 'o', "",
                     "Output directory to rename/remux the file.");
   _parser.setOption("blacklist", 'b', "", "Blacklist file containing filters");
+  _parser.setOption("cache", 'c', "Use cache files to reduce requests");
   if (argc - 1 >= 0)
     _filename = argv[argc - 1];
 }
@@ -63,6 +64,8 @@ int Rename::prepare() {
       return 1;
     }
 
+    _engine.useCache(_parser.getOption<bool>("cache"));
+
     _outputDirectory = std::filesystem::absolute(_filename).parent_path();
     if (_parser.isSetOption("output-directory")) {
       _outputDirectory = _parser.getOption<std::string>("output-directory");
@@ -74,13 +77,15 @@ int Rename::prepare() {
           fmt::format("{} is not a directory", _outputDirectory.string()));
     }
 
-    _container = Media::FileInfo::Container::Other;
+    _container = Media::FileInfo::Container::None;
     if (_parser.getOption<std::string>("muxer") == "mp4")
       _container = Media::FileInfo::Container::Mp4;
     else if (_parser.getOption<std::string>("muxer") == "mkv")
       _container = Media::FileInfo::Container::Mkv;
     else if (_parser.getOption<std::string>("muxer") == "none")
       _container = Media::FileInfo::Container::None;
+    else if (_parser.getOption<std::string>("muxer") == "same")
+      _container = Media::FileInfo::Container::Other;
 
   } catch (const std::exception& e) {
     std::cerr << e.what() << std::endl;

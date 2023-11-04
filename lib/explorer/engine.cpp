@@ -94,7 +94,7 @@ inline bool validCacheFile(const std::filesystem::path& p) {
   auto now = std::chrono::system_clock::now().time_since_epoch();
   auto write = std::filesystem::last_write_time(p).time_since_epoch();
   return std::chrono::duration_cast<std::chrono::hours>(now - write) >
-         std::chrono::hours(24 * 7);
+         std::chrono::hours(24 * 6);
 }
 
 size_t bestMatch(std::vector<std::string>& inputs, const std::string& user) {
@@ -129,7 +129,7 @@ namespace Explorer {
 Engine::Engine()
     : _tmdb{Api::Tmdb::create("")}, _language{}, _moviesGenres{},
       _tvShowsGenres{}, _filter{nullptr}, _cacheDirectory(),
-      _spaceReplacement('.') {
+      _spaceReplacement('.'), _useCache(true) {
   char* test = nullptr;
   test = ::getenv("LC_MESSAGES");
   if (test == nullptr) {
@@ -172,7 +172,7 @@ void Engine::setTmdbKey(const std::string& key) {
 
 void Engine::loadGenresTv() {
   const std::filesystem::path cache = _cacheDirectory / kGenresDir / kGenresTv;
-  if (validCacheFile(cache)) {
+  if (_useCache && validCacheFile(cache)) {
     Logger()->debug("Loading tv genres from {}", cache.string());
     // load from cache
     std::ifstream file(cache, std::ios::in);
@@ -213,7 +213,7 @@ void Engine::loadGenresTv() {
 void Engine::loadGenresMovie() {
   const std::filesystem::path cache =
       _cacheDirectory / kGenresDir / kGenresMovie;
-  if (validCacheFile(cache)) {
+  if (_useCache && validCacheFile(cache)) {
     Logger()->debug("Loading movie genres from {}", cache.string());
     // load from cache
     std::ifstream file(cache, std::ios::in);
@@ -299,7 +299,7 @@ Engine::searchTvShow(const std::string& searchString,
 std::unique_ptr<Api::Tv::Details> Engine::getTvShowDetails(int id) const {
   const std::filesystem::path cache =
       _cacheDirectory / kTvDir / fmt::format("{}.json", id);
-  if (validCacheFile(cache)) {
+  if (_useCache && validCacheFile(cache)) {
     Logger()->debug("Loading TV show details from {}", cache.string());
     // load from cache
     std::ifstream file(cache, std::ios::in);
@@ -339,7 +339,7 @@ std::unique_ptr<Api::TvSeasons::Details>
 Engine::getSeasonDetails(int id, int season) const {
   const std::filesystem::path cache =
       _cacheDirectory / kTvSeasonsDir / fmt::format("{}_{}.json", id, season);
-  if (validCacheFile(cache)) {
+  if (_useCache && validCacheFile(cache)) {
     Logger()->debug("Loading TV season details from {}", cache.string());
     // load from cache
     std::ifstream file(cache, std::ios::in);
@@ -378,7 +378,6 @@ Engine::getSeasonDetails(int id, int season) const {
 const Engine::Prediction
 Engine::predictFile(std::string file, Media::FileInfo::Container container,
                     const std::filesystem::path& outputDirectory) const {
-
   if (!std::filesystem::exists(file))
     throw std::runtime_error("File {} does not exist.");
 
@@ -579,7 +578,6 @@ Engine::listFiles(const std::filesystem::path& directory,
 }
 
 int Engine::apply(const Prediction& pred) const {
-
   using namespace Media::Tag;
 
   Media::Muxer* muxer = nullptr;
@@ -697,6 +695,17 @@ void Engine::autoRename(std::queue<std::filesystem::path>& queue,
   for (auto& t : workers) {
     t.join();
   }
+}
+
+void Engine::setCacheDirectory(const std::filesystem::path& dir) {
+  if (std::filesystem::is_directory(dir))
+    _cacheDirectory = dir;
+  Logger()->debug("Cache directory is now {}", dir.string());
+}
+
+void Engine::useCache(bool cache) {
+  Logger()->debug("Cache is {}", cache ? "enabled" : "disabled");
+  _useCache = cache;
 }
 
 } // namespace Explorer
