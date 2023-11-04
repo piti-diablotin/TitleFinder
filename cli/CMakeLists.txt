@@ -59,7 +59,7 @@ add_executable(titlefinder_cli
 target_link_libraries(titlefinder_cli
   PRIVATE
   titlefinder::titlefinder
-  $<$<NOT:$<BOOL:${USE_HEADER_ONLY}>>:fmt::fmt>
+  $<IF:$<BOOL:${USE_HEADER_ONLY}>,fmt::fmt-header-only,fmt::fmt>
   )
 
 target_compile_definitions(titlefinder_cli
@@ -70,7 +70,6 @@ target_compile_definitions(titlefinder_cli
   TITLEFINDER_VERSION_PATCH=${PROJECT_VERSION_PATCH}
   TITLEFINDER_NAME="${PROJECT_NAME}"
   $<$<BOOL:${ioctl_FOUND}>:HAVE_IOCTL>
-  $<$<BOOL:${USE_HEADER_ONLY}>:FMT_HEADER_ONLY>
   )
 
 include(GNUInstallDirs)

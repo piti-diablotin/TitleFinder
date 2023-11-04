@@ -118,7 +118,7 @@ target_link_libraries(titlefinder
   PRIVATE
   #api
   CURL::libcurl
-  $<$<NOT:$<BOOL:${USE_HEADER_ONLY}>>:fmt::fmt>
+  $<IF:$<BOOL:${USE_HEADER_ONLY}>,fmt::fmt-header-only,fmt::fmt>
   #media
   ${AVUTIL_LIBRARY}
   ${AVCODEC_LIBRARY}
