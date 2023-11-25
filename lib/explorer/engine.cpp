@@ -97,7 +97,8 @@ inline bool validCacheFile(const std::filesystem::path& p) {
          std::chrono::hours(24 * 6);
 }
 
-size_t bestMatch(std::vector<std::string>& inputs, const std::string& user) {
+std::pair<size_t, size_t> bestMatch(std::vector<std::string>& inputs,
+                                    const std::string& user) {
   std::string copy;
   copy.resize(user.size());
   std::transform(user.cbegin(), user.cend(), copy.begin(),
@@ -117,7 +118,8 @@ size_t bestMatch(std::vector<std::string>& inputs, const std::string& user) {
     }
     ++i;
   }
-  return id;
+  size_t count = std::count(inputs.begin(), inputs.end(), inputs[id]);
+  return std::make_pair(id, count);
 }
 
 } // namespace
@@ -409,12 +411,21 @@ Engine::predictFile(std::string file, Media::FileInfo::Container container,
       year = discri.getYear();
     }
     auto rep = this->searchMovie(title, year);
+    size_t selected = 0;
+    size_t count = 0;
     if (rep->total_results == 0)
       throw std::logic_error("No match found");
+    else {
+      std::vector<std::string> inputs(rep->results.size());
+      for (size_t i = 0; i < inputs.size(); ++i) {
+        inputs[i] = rep->results[i].title;
+      }
+      std::tie(selected, count) = bestMatch(inputs, title);
+    }
     Prediction pred(info == nullptr ? Media::FileInfo{original_file}
                                     : std::move(*info));
     Api::MovieInfoCompact* tmp =
-        new Api::MovieInfoCompact(std::move(rep->results[0]));
+        new Api::MovieInfoCompact(std::move(rep->results[selected]));
     pred.movie.reset(tmp);
     Logger()->debug("Movie title found: {}", pred.movie->title);
 
@@ -469,16 +480,27 @@ Engine::predictFile(std::string file, Media::FileInfo::Container container,
     }
   } else if (t == Type::Show) {
     Logger()->debug("Searching for tvshow title {}", title);
-    auto rep = this->searchTvShow(title);
+    std::unique_ptr<Api::Search::SearchTvShows> rep;
+    Api::optionalInt year;
     size_t selected = 0;
-    if (rep->total_results == 0)
-      throw std::logic_error("No match found");
-    else {
-      std::vector<std::string> inputs(rep->results.size());
-      for (size_t i = 0; i < inputs.size(); ++i) {
-        inputs[i] = rep->results[i].name;
+    for (auto i = 0; i < 2; ++i) {
+      size_t count = 0;
+      rep = this->searchTvShow(title, year);
+      if (rep->total_results == 0)
+        throw std::logic_error("No match found");
+      else {
+        std::vector<std::string> inputs(rep->results.size());
+        for (size_t i = 0; i < inputs.size(); ++i) {
+          inputs[i] = rep->results[i].name;
+        }
+        std::tie(selected, count) = bestMatch(inputs, title);
+
+        if (count == 1 || discri.getYear() == -1)
+          break;
+        year = discri.getYear();
+        Logger()->debug("{} tvshow found with same title", count);
+        Logger()->debug("Using year {} to discrimitate", year.value());
       }
-      selected = bestMatch(inputs, title);
     }
     Prediction pred(Media::FileInfo{original_file});
     Api::TvShowInfoCompact* tmp =
@@ -499,10 +521,18 @@ Engine::predictFile(std::string file, Media::FileInfo::Container container,
       throw std::logic_error("No episode found");
     }
 
-    pred.output =
-        fmt::format("{0}/{0}.S{1:02d}/{0}.S{1:02d}E{2:02d}.{3}{4}",
-                    pred.tvshow->name, ep->season_number, ep->episode_number,
-                    ep->name, pred.input.getPath().extension().string());
+    if (!year.has_value())
+      pred.output =
+          fmt::format("{0}/{0}.S{1:02d}/{0}.S{1:02d}E{2:02d}.{3}{4}",
+                      pred.tvshow->name, ep->season_number, ep->episode_number,
+                      ep->name, pred.input.getPath().extension().string());
+    else
+      pred.output =
+          fmt::format("{0}.{5:.4s}/{0}.{5:.4s}.S{1:02d}/"
+                      "{0}.{5:.4s}.S{1:02d}E{2:02d}.{3}{4}",
+                      pred.tvshow->name, ep->season_number, ep->episode_number,
+                      ep->name, pred.input.getPath().extension().string(),
+                      pred.tvshow->first_air_date);
     std::replace(pred.output.begin(), pred.output.end(), ' ',
                  _spaceReplacement);
 
