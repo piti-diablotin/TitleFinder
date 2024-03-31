@@ -341,6 +341,7 @@ std::unique_ptr<Api::TvSeasons::Details>
 Engine::getSeasonDetails(int id, int season) const {
   const std::filesystem::path cache =
       _cacheDirectory / kTvSeasonsDir / fmt::format("{}_{}.json", id, season);
+  std::unique_ptr<Api::TvSeasons::Details> s;
   if (_useCache && validCacheFile(cache)) {
     Logger()->debug("Loading TV season details from {}", cache.string());
     // load from cache
@@ -349,32 +350,34 @@ Engine::getSeasonDetails(int id, int season) const {
       try {
         json j = json::parse(file);
         file.close();
-        auto s = std::make_unique<Api::TvSeasons::Details>();
+        s = std::make_unique<Api::TvSeasons::Details>();
         s->from_json(j);
-        return s;
       } catch (const std::exception& e) {
         Logger()->error("Failed to load TV season cache file with: {} ",
                         e.what());
       }
     }
-  }
-  if (!_tmdb)
-    throw std::runtime_error("You need to set an API key first");
-  Api::TvSeasons tvseasons(_tmdb);
-  auto rep = tvseasons.getDetails(id, season, _language);
-  CAST_REPONSE(rep, Api::TvSeasons::Details, s);
-  (void)rep.release();
-  try {
-    mkdir(cache.parent_path());
-    std::ofstream file(cache, std::ios::out);
-    if (file.is_open()) {
-      file << s->json().dump();
-      file.close();
+  } else {
+    if (!_tmdb)
+      throw std::runtime_error("You need to set an API key first");
+    Api::TvSeasons tvseasons(_tmdb);
+    auto rep = tvseasons.getDetails(id, season, _language);
+    CAST_REPONSE(rep, Api::TvSeasons::Details, ss);
+    s.reset(ss);
+    (void)rep.release();
+    try {
+      mkdir(cache.parent_path());
+      std::ofstream file(cache, std::ios::out);
+      if (file.is_open()) {
+        file << s->json().dump();
+        file.close();
+      }
+    } catch (const std::exception& e) {
+      Logger()->warn("Unable to cache TV season details");
     }
-  } catch (const std::exception& e) {
-    Logger()->warn("Unable to cache TV season details");
   }
-  return std::unique_ptr<Api::TvSeasons::Details>(s);
+  std::replace(s->name.begin(), s->name.end(), '/', '-');
+  return s;
 }
 
 const Engine::Prediction
@@ -521,6 +524,7 @@ Engine::predictFile(std::string file, Media::FileInfo::Container container,
       throw std::logic_error("No episode found");
     }
 
+    std::replace(ep->name.begin(), ep->name.end(), '/', '-');
     if (!year.has_value())
       pred.output =
           fmt::format("{0}/{0}.S{1:02d}/{0}.S{1:02d}E{2:02d}.{3}{4}",

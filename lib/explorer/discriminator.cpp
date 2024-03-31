@@ -25,6 +25,7 @@
 
 #include <filesystem>
 #include <regex>
+#include <chrono>
 
 #include "explorer/logger.hpp"
 
@@ -32,9 +33,9 @@ namespace {
 
 constexpr const char* seasonDiscriminant_{R"([\.\-_ ][s]?(\d{1,2})$)"};
 constexpr const char* episodeDiscriminant_{
-    R"([\.\-_ ][s]?(\d{1,2})\.?[xe](\d{1,2}))"};
+    R"([\.\-_ ][s]?(\d{1,2})[\.\- ]?[xe](\d{1,2}))"};
 constexpr const char* movieDiscriminant_{
-    R"([\._\- ]?\(?(\d{4})[^a-zA-Z0-9]\)?)"};
+    R"([\._\- ]?\(?(\d{4})[^a-zA-Z0-9]*\)?)"};
 
 } // namespace
 
@@ -62,7 +63,8 @@ Type Discriminator::getType(const std::filesystem::path& p) {
     _season = std::stoi(m[1].str());
     _episode = std::stoi(m[2].str());
     _title = m.prefix().str();
-    if (std::regex_search(copy, m, _reM)) {
+    if (std::regex_search(_title, m, _reM)) {
+      Logger()->debug("Found year {}", m[1].str());
       _title = m.prefix().str();
       _year = std::stoi(m[1].str());
     }
@@ -77,6 +79,19 @@ Type Discriminator::getType(const std::filesystem::path& p) {
     t = Type::Movie;
     _title = p.stem();
   }
+  auto now = std::chrono::system_clock::now();
+  auto tp = std::chrono::system_clock::to_time_t(now);
+  auto* tm = std::localtime(&tp);
+  auto currentYear = tm->tm_year + 1900;
+  if (_year > currentYear ) {
+    Logger()->debug("Year {} is in the futur, removing", _year);
+    _year = -1;
+  }
+  else if (_year != -1 && _year < 1920) {
+    Logger()->debug("Year {} is very old, removing", _year);
+    _year = -1;
+  }
+
   return t;
 }
 
