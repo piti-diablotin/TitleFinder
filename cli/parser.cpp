@@ -5,7 +5,7 @@
 #include <algorithm>
 #include <cstdlib>
 #include <fmt/format.h>
-#include <sstream>
+#include <fmt/ranges.h>
 #include <stdexcept>
 #include <string_view>
 
